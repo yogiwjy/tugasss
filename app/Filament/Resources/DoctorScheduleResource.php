@@ -1,5 +1,7 @@
 <?php
-// File: app/Filament/Resources/DoctorScheduleResource.php
+// ================================================================================================
+// 1. UPDATE: app/Filament/Resources/DoctorScheduleResource.php - LENGKAP
+// ================================================================================================
 
 namespace App\Filament\Resources;
 
@@ -32,6 +34,34 @@ class DoctorScheduleResource extends Resource
     {
         return $form
             ->schema([
+                // ✅ SECTION 1: FOTO DOKTER (BARU)
+                Forms\Components\Section::make('Foto Dokter')
+                    ->description('Upload foto profil dokter untuk ditampilkan di jadwal')
+                    ->schema([
+                        Forms\Components\FileUpload::make('foto')
+                            ->label('Foto Dokter')
+                            ->image()
+                            ->imageEditor()
+                            ->imageEditorAspectRatios([
+                                '1:1',
+                                '4:3',
+                                '3:4',
+                            ])
+                            ->maxSize(2048) // Max 2MB
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp'])
+                            ->directory('doctor-photos')
+                            ->visibility('public')
+                            ->imagePreviewHeight('200')
+                            ->columnSpanFull()
+                            ->helperText('Format: JPG, JPEG, PNG, WebP. Maksimal: 2MB. Rasio yang disarankan: 1:1 (persegi) atau 3:4 (portrait)')
+                            ->imageResizeMode('cover')
+                            ->imageCropAspectRatio('1:1')
+                            ->panelLayout('compact'),
+                    ])
+                    ->columns(1)
+                    ->collapsible(),
+
+                // ✅ SECTION 2: INFORMASI DOKTER
                 Forms\Components\Section::make('Informasi Dokter')
                     ->description('Data dokter dan poli praktik')
                     ->schema([
@@ -42,7 +72,7 @@ class DoctorScheduleResource extends Resource
                                     ->required()
                                     ->maxLength(255)
                                     ->placeholder('dr. Nama Dokter')
-                                    ->helperText('Masukkan nama lengkap dokter'),
+                                    ->helperText('Masukkan nama lengkap dokter dengan gelar'),
                                     
                                 Forms\Components\Select::make('service_id')
                                     ->label('Poli')
@@ -76,6 +106,7 @@ class DoctorScheduleResource extends Resource
                             ]),
                     ]),
 
+                // ✅ SECTION 3: JADWAL PRAKTIK
                 Forms\Components\Section::make('Jadwal Praktik')
                     ->description('Atur hari dan jam praktik dokter')
                     ->schema([
@@ -119,6 +150,7 @@ class DoctorScheduleResource extends Resource
                             ->helperText('Jadwal hanya berlaku jika status aktif'),
                     ]),
 
+                // Hidden fields
                 Forms\Components\Hidden::make('day_of_week'),
                 Forms\Components\Hidden::make('user_id'),
             ]);
@@ -128,33 +160,50 @@ class DoctorScheduleResource extends Resource
     {
         return $table
             ->columns([
+                // ✅ TAMBAH KOLOM FOTO
+                Tables\Columns\ImageColumn::make('foto')
+                    ->label('Foto')
+                    ->circular()
+                    ->size(50)
+                    ->defaultImageUrl(asset('assets/img/default-doctor.png'))
+                    ->extraAttributes(['style' => 'object-fit: cover;']),
+                    
                 Tables\Columns\TextColumn::make('doctor_name')
                     ->label('Nama Dokter')
                     ->searchable()
                     ->sortable()
                     ->weight('semibold')
-                    ->limit(30),
+                    ->limit(30)
+                    ->description(fn (DoctorSchedule $record): string => 
+                        $record->service ? "Poli: {$record->service->name}" : ''
+                    ),
                     
                 Tables\Columns\TextColumn::make('service.name')
                     ->label('Poli')
                     ->searchable()
                     ->sortable()
                     ->badge()
-                    ->limit(20),
+                    ->limit(20)
+                    ->toggleable(),
                     
                 Tables\Columns\TextColumn::make('formatted_days')
                     ->label('Hari Praktik')
-                    ->badge(),
+                    ->badge()
+                    ->separator(',')
+                    ->wrap(),
                     
                 Tables\Columns\TextColumn::make('time_range')
                     ->label('Jam Praktik')
-                    ->badge(),
+                    ->badge()
+                    ->color('success'),
                     
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Status')
                     ->boolean()
                     ->trueIcon('heroicon-o-check-circle')
-                    ->falseIcon('heroicon-o-x-circle'),
+                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')
+                    ->falseColor('danger'),
                     
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Dibuat')
@@ -162,6 +211,7 @@ class DoctorScheduleResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('service_id')
                     ->label('Poli')
@@ -174,6 +224,17 @@ class DoctorScheduleResource extends Resource
                     ->placeholder('Semua Jadwal')
                     ->trueLabel('Hanya Aktif')
                     ->falseLabel('Hanya Tidak Aktif'),
+
+                // ✅ FILTER FOTO
+                Tables\Filters\TernaryFilter::make('has_photo')
+                    ->label('Foto')
+                    ->placeholder('Semua Dokter')
+                    ->trueLabel('Punya Foto')
+                    ->falseLabel('Belum Ada Foto')
+                    ->queries(
+                        true: fn ($query) => $query->whereNotNull('foto'),
+                        false: fn ($query) => $query->whereNull('foto'),
+                    ),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -185,7 +246,6 @@ class DoctorScheduleResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ])
-            ->defaultSort('created_at', 'desc')
             ->striped()
             ->paginated([10, 25, 50, 100]);
     }
@@ -206,5 +266,60 @@ class DoctorScheduleResource extends Resource
     public static function getNavigationBadgeColor(): string|array|null
     {
         return 'success';
+    }
+}
+
+// ================================================================================================
+// 2. UPDATE: app/Http/Controllers/DoctorController.php - SINKRON DENGAN USER
+// ================================================================================================
+
+namespace App\Http\Controllers;
+
+use App\Models\Doctor;
+use App\Models\DoctorSchedule;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+
+class DoctorController extends Controller
+{
+    public function jadwaldokter()
+    {
+        // ✅ AMBIL JADWAL DOKTER DENGAN FOTO
+        $doctors = DoctorSchedule::with('service')
+            ->where('is_active', true)
+            ->get()
+            ->groupBy('doctor_name') // Group berdasarkan nama dokter
+            ->map(function ($schedules) {
+                $firstSchedule = $schedules->first();
+                return [
+                    'id' => $firstSchedule->id,
+                    'doctor_name' => $firstSchedule->doctor_name,
+                    'foto' => $firstSchedule->foto, // ✅ INCLUDE FOTO
+                    'service' => $firstSchedule->service,
+                    'schedules' => $schedules,
+                    'all_days' => $schedules->flatMap(function ($schedule) {
+                        return $schedule->days ?? [];
+                    })->unique()->sort()->values(),
+                    'time_range' => $firstSchedule->time_range,
+                ];
+            })
+            ->sortBy('doctor_name');
+
+        return view('jadwaldokter', compact('doctors'));
+    }
+
+    public function index()
+    {
+        $doctors = DoctorSchedule::with('service')
+            ->where('is_active', true)
+            ->get();
+            
+        return view('doctors.index', compact('doctors'));
+    }
+
+    public function show($id)
+    {
+        $schedule = DoctorSchedule::with('service')->findOrFail($id);
+        return view('doctors.show', compact('schedule'));
     }
 }

@@ -1,11 +1,10 @@
 <?php
-// File: app/Models/DoctorSchedule.php - UPDATED untuk support multiple days
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 class DoctorSchedule extends Model
 {
@@ -16,14 +15,14 @@ class DoctorSchedule extends Model
         'start_time',
         'end_time',
         'is_active',
-        'foto'
+        'foto' // ✅ TAMBAH FOTO
     ];
 
     protected $casts = [
         'start_time' => 'datetime:H:i',
         'end_time' => 'datetime:H:i',
         'is_active' => 'boolean',
-        'days' => 'array', // ✅ TAMBAH: Cast days sebagai array
+        'days' => 'array',
     ];
 
     /**
@@ -40,6 +39,26 @@ class DoctorSchedule extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ✅ ACCESSOR: Get photo URL with fallback
+     */
+    public function getFotoUrlAttribute(): string
+    {
+        if ($this->foto && Storage::disk('public')->exists($this->foto)) {
+            return Storage::url($this->foto);
+        }
+        
+        return asset('assets/img/default-doctor.png');
+    }
+
+    /**
+     * ✅ ACCESSOR: Check if doctor has photo
+     */
+    public function getHasFotoAttribute(): bool
+    {
+        return !empty($this->foto) && Storage::disk('public')->exists($this->foto);
     }
 
     /**
@@ -65,7 +84,6 @@ class DoctorSchedule extends Model
             return $dayNames[$day] ?? ucfirst($day);
         }, $this->days);
 
-        // ✅ SMART FORMATTING: Gabung hari berurutan
         return $this->formatConsecutiveDays($formattedDays);
     }
 
@@ -74,7 +92,6 @@ class DoctorSchedule extends Model
      */
     private function formatConsecutiveDays(array $days): string
     {
-        // Mapping untuk urutan hari
         $dayOrder = [
             'Senin' => 1,
             'Selasa' => 2,
@@ -85,12 +102,10 @@ class DoctorSchedule extends Model
             'Minggu' => 7,
         ];
 
-        // Sort days berdasarkan urutan
         usort($days, function($a, $b) use ($dayOrder) {
             return ($dayOrder[$a] ?? 99) - ($dayOrder[$b] ?? 99);
         });
 
-        // Check for consecutive patterns
         if (count($days) >= 5 && array_diff(['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'], $days) == []) {
             $weekend = array_intersect(['Sabtu', 'Minggu'], $days);
             if (count($weekend) > 0) {
@@ -100,12 +115,10 @@ class DoctorSchedule extends Model
             }
         }
 
-        // Check for weekend
         if (count($days) == 2 && array_diff(['Sabtu', 'Minggu'], $days) == []) {
             return 'Weekend';
         }
 
-        // Default: just join with comma
         return implode(', ', $days);
     }
 
@@ -133,7 +146,7 @@ class DoctorSchedule extends Model
      */
     public function isActiveToday(): bool
     {
-        $today = strtolower(now()->format('l')); // monday, tuesday, etc.
+        $today = strtolower(now()->format('l'));
         return $this->is_active && in_array($today, $this->days ?? []);
     }
 
@@ -153,11 +166,9 @@ class DoctorSchedule extends Model
         $existingSchedules = $query->get();
 
         foreach ($existingSchedules as $schedule) {
-            // Check if any day overlaps
             $commonDays = array_intersect($days, $schedule->days ?? []);
             
             if (!empty($commonDays)) {
-                // Check if time overlaps
                 $existingStart = $schedule->start_time->format('H:i');
                 $existingEnd = $schedule->end_time->format('H:i');
                 
@@ -211,6 +222,14 @@ class DoctorSchedule extends Model
     }
 
     /**
+     * ✅ SCOPE: Filter yang punya foto
+     */
+    public function scopeWithPhoto($query)
+    {
+        return $query->whereNotNull('foto');
+    }
+
+    /**
      * Get all unique doctor names
      */
     public static function getUniqueDoctorNames(): array
@@ -231,5 +250,30 @@ class DoctorSchedule extends Model
             ->whereJsonContains('days', strtolower($day))
             ->where('is_active', true)
             ->first();
+    }
+
+    /**
+     * ✅ BOOT: Handle foto deletion saat record dihapus
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($schedule) {
+            // Hapus foto dari storage saat record dihapus
+            if ($schedule->foto && Storage::disk('public')->exists($schedule->foto)) {
+                Storage::disk('public')->delete($schedule->foto);
+            }
+        });
+
+        static::updating(function ($schedule) {
+            // Hapus foto lama jika diganti dengan foto baru
+            if ($schedule->isDirty('foto')) {
+                $originalFoto = $schedule->getOriginal('foto');
+                if ($originalFoto && Storage::disk('public')->exists($originalFoto)) {
+                    Storage::disk('public')->delete($originalFoto);
+                }
+            }
+        });
     }
 }
