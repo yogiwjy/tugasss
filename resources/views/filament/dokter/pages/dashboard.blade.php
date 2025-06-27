@@ -1,5 +1,5 @@
 {{-- File: resources/views/filament/dokter/pages/dashboard.blade.php --}}
-{{-- SIMPLE CLEAN Dashboard - Filament Style untuk Dokter --}}
+{{-- SIMPLE CLEAN Dashboard - Filament Style untuk Dokter dengan Jadwal --}}
 
 <x-filament-panels::page>
 <div class="space-y-6">
@@ -8,19 +8,22 @@
         <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
                 {{-- Avatar Simple --}}
-                <div class="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center">
-                    <span class="text-lg font-semibold text-white">
+                <div class="w-16 h-16 bg-gray-900 rounded-full flex items-center justify-center">
+                    <span class="text-xl font-semibold text-white">
                         {{ strtoupper(substr($user->name, 0, 2)) }}
                     </span>
                 </div>
 
                 {{-- Welcome Text --}}
                 <div>
-                    <h1 class="text-xl font-semibold text-gray-900">
+                    <h1 class="text-2xl font-semibold text-gray-900">
                         Selamat Datang
                     </h1>
-                    <p class="text-sm text-gray-500">
+                    <p class="text-lg text-gray-600">
                         {{ $user->name }}
+                    </p>
+                    <p class="text-sm text-gray-500">
+                        Panel Dokter - {{ now()->format('l, d F Y') }}
                     </p>
                 </div>
             </div>
@@ -38,6 +41,96 @@
                 </form>
             </div>
         </div>
+    </div>
+
+    {{-- Jadwal Dokter Hari Ini --}}
+    @php
+        $today = strtolower(now()->format('l')); // monday, tuesday, etc.
+        $todaySchedules = \App\Models\DoctorSchedule::where('is_active', true)
+            ->where('day_of_week', $today)
+            ->with('service')
+            ->get();
+        $mySchedule = $todaySchedules->where('doctor_name', $user->name)->first();
+    @endphp
+
+    <div class="bg-white rounded-lg shadow border p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4m4 0V9a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h8m-8-4h8m-8 4h8"/>
+            </svg>
+            Jadwal Praktik Hari Ini ({{ ucfirst(\Carbon\Carbon::now()->locale('id')->translatedFormat('l, d F Y')) }})
+        </h3>
+
+        @if($mySchedule)
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-400 rounded-full mr-3"></div>
+                    <div>
+                        <span class="font-medium text-green-800">Anda memiliki jadwal praktik hari ini</span>
+                        <div class="text-sm text-green-600 mt-1">
+                            <strong>{{ $mySchedule->service->name }}</strong> • 
+                            {{ $mySchedule->time_range }} • 
+                            <span class="bg-green-100 px-2 py-1 rounded text-xs font-medium">{{ $mySchedule->day_name }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                <div class="flex items-center">
+                    <div class="w-3 h-3 bg-gray-400 rounded-full mr-3"></div>
+                    <div class="text-sm text-gray-600">
+                        Tidak ada jadwal praktik untuk hari ini
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Daftar Semua Dokter Hari Ini --}}
+        @if($todaySchedules->count() > 0)
+            <h4 class="text-md font-medium text-gray-700 mb-3">Dokter Praktik Hari Ini:</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                @foreach($todaySchedules as $schedule)
+                    <div class="bg-gray-50 rounded-lg p-3 border {{ $schedule->doctor_name === $user->name ? 'border-green-300 bg-green-50' : 'border-gray-200' }}">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span class="text-sm font-medium text-blue-600">
+                                    {{ strtoupper(substr($schedule->doctor_name, 0, 2)) }}
+                                </span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">
+                                    {{ $schedule->doctor_name }}
+                                    @if($schedule->doctor_name === $user->name)
+                                        <span class="text-green-600">(Anda)</span>
+                                    @endif
+                                </p>
+                                <div class="flex items-center space-x-2 text-xs text-gray-500">
+                                    <span>{{ $schedule->service->name }}</span>
+                                    <span>•</span>
+                                    <span>{{ $schedule->time_range }}</span>
+                                </div>
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ 
+                                        $schedule->day_of_week === 'monday' ? 'bg-blue-100 text-blue-800' :
+                                        ($schedule->day_of_week === 'tuesday' ? 'bg-green-100 text-green-800' :
+                                        ($schedule->day_of_week === 'wednesday' ? 'bg-yellow-100 text-yellow-800' :
+                                        ($schedule->day_of_week === 'thursday' ? 'bg-orange-100 text-orange-800' :
+                                        ($schedule->day_of_week === 'friday' ? 'bg-red-100 text-red-800' :
+                                        ($schedule->day_of_week === 'saturday' ? 'bg-purple-100 text-purple-800' :
+                                        'bg-gray-100 text-gray-800')))))
+                                    }}">
+                                        {{ $schedule->day_name }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <p class="text-sm text-gray-500">Tidak ada dokter yang terjadwal praktik hari ini.</p>
+        @endif
     </div>
 
     {{-- Connection Status - Simple Info --}}
