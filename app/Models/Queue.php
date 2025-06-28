@@ -15,6 +15,7 @@ class Queue extends Model
         'counter_id',
         'service_id',
         'user_id',
+        'doctor_id',  // ✅ TAMBAH doctor_id
         'number',
         'status',
         'called_at',
@@ -44,6 +45,12 @@ class Queue extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    // ✅ TAMBAH: Relationship ke DoctorSchedule
+    public function doctorSchedule(): BelongsTo
+    {
+        return $this->belongsTo(DoctorSchedule::class, 'doctor_id');
     }
 
     public function medicalRecord(): HasOne
@@ -102,28 +109,43 @@ class Queue extends Model
     }
 
     /**
-     * Get dokter dari medical record yang terkait
+     * ✅ PERBAIKAN UTAMA: Get dokter dari doctor_id (prioritas utama) atau medical record
      */
     public function getDoctorAttribute()
     {
-        // Jika ada medical record, ambil dokter dari sana
+        // Prioritas 1: Dari doctor_id yang dipilih saat ambil antrian
+        if ($this->doctor_id && $this->doctorSchedule) {
+            return (object) [
+                'id' => $this->doctorSchedule->id,
+                'name' => $this->doctorSchedule->doctor_name,
+                'service' => $this->doctorSchedule->service,
+            ];
+        }
+        
+        // Prioritas 2: Dari medical record (jika sudah ada rekam medis)
         if ($this->medicalRecord && $this->medicalRecord->doctor) {
             return $this->medicalRecord->doctor;
         }
         
-        // Jika tidak ada medical record, return null
         return null;
     }
 
     /**
-     * Get nama dokter
+     * ✅ PERBAIKAN UTAMA: Get nama dokter yang dipilih saat antrian atau dari rekam medis
      */
     public function getDoctorNameAttribute(): ?string
     {
-        if ($this->doctor) {
-            return $this->doctor->name;
+        // Prioritas 1: Dari doctor_schedule yang dipilih saat ambil antrian
+        if ($this->doctor_id && $this->doctorSchedule) {
+            return $this->doctorSchedule->doctor_name;
         }
         
+        // Prioritas 2: Dari medical record (jika sudah ada rekam medis)
+        if ($this->medicalRecord && $this->medicalRecord->doctor) {
+            return $this->medicalRecord->doctor->name;
+        }
+        
+        // Fallback: Belum ditentukan
         return null;
     }
 

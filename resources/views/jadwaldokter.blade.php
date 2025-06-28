@@ -159,7 +159,7 @@
                 <ul>
                     <li>Jadwal dapat berubah sewaktu-waktu tanpa pemberitahuan sebelumnya</li>
                     <li>Harap datang 15 menit sebelum jam praktik</li>
-                    <li>Untuk informasi lebih lanjut, hubungi: <strong>0821-1234-5678</strong></li>
+                    <li>Untuk informasi lebih lanjut, hubungi: <strong>0896-7878-4190</strong></li>
                     <li>Untuk membuat antrian, silakan gunakan menu <strong>"Buat Antrian"</strong> di sidebar</li>
                 </ul>
             </div>

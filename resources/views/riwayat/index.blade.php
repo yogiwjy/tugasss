@@ -142,7 +142,27 @@
                                 </td>
                                 <td>
                                     <div class="doctor-info">
-                                        {{ $antrian->doctor_name ?? 'Belum ditentukan' }}
+                                        @if($antrian->doctor_name)
+                                            <strong>{{ $antrian->doctor_name }}</strong>
+                                            @if(config('app.debug'))
+                                                <small class="text-muted d-block">
+                                                    @if($antrian->doctor_id && $antrian->doctorSchedule)
+                                                        <span class="badge badge-success">Dari Antrian</span><br>
+                                                        {{-- ID: {{ $antrian->doctor_id }} --}}
+                                                    @endif
+                                                    @if($antrian->medicalRecord && $antrian->medicalRecord->doctor)
+                                                        <span class="badge badge-info">Dari Rekam Medis</span>
+                                                    @endif
+                                                </small>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">Belum ditentukan</span>
+                                            @if(config('app.debug'))
+                                                <small class="text-danger d-block">
+                                                    Debug: doctor_id={{ $antrian->doctor_id ?? 'null' }}
+                                                </small>
+                                            @endif
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -197,7 +217,20 @@
                                 </div>
                                 <div class="info-item">
                                     <i class="fas fa-user-md"></i>
-                                    <span>{{ $antrian->doctor_name ?? 'Belum ditentukan' }}</span>
+                                    <span>
+                                        @if($antrian->doctor_name)
+                                            {{ $antrian->doctor_name }}
+                                            @if(config('app.debug'))
+                                                @if($antrian->doctor_id)
+                                                    <small class="text-success">(Antrian)</small>
+                                                @elseif($antrian->medicalRecord && $antrian->medicalRecord->doctor)
+                                                    <small class="text-info">(Rekam Medis)</small>
+                                                @endif
+                                            @endif
+                                        @else
+                                            Belum ditentukan
+                                        @endif
+                                    </span>
                                 </div>
                                 @if($antrian->medicalRecord)
                                     <div class="info-item medical-info">

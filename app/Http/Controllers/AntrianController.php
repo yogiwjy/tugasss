@@ -1,10 +1,13 @@
 <?php
+// File: app/Http/Controllers/AntrianController.php
+// PERBAIKAN: Simpan doctor_id saat buat antrian
 
 namespace App\Http\Controllers;
 
 use App\Models\Queue;
 use App\Models\Service; 
 use App\Models\User;
+use App\Models\DoctorSchedule;  // ✅ TAMBAH IMPORT
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,8 +22,8 @@ class AntrianController extends Controller
     {
         $user = Auth::user();
         
-        // ✅ SUDAH BENAR - tambah relationship user
-        $antrianTerbaru = Queue::with(['service', 'counter', 'user'])
+        // ✅ TAMBAH: Load doctor schedule relationship
+        $antrianTerbaru = Queue::with(['service', 'counter', 'user', 'doctorSchedule'])
                               ->where('user_id', $user->id)
                               ->latest()
                               ->first();
@@ -49,18 +52,10 @@ class AntrianController extends Controller
 
         $services = Service::where('is_active', true)->get();
         
-        $doctors = collect();
-        try {
-            $doctors = DB::table('doctor_schedules')
-                        ->where('is_active', true)
-                        ->get();
-        } catch (\Exception $e) {
-            try {
-                $doctors = DB::table('doctors')->where('is_active', true)->get();
-            } catch (\Exception $e2) {
-                $doctors = collect();
-            }
-        }
+        // ✅ PERBAIKAN: Ambil dari DoctorSchedule yang aktif
+        $doctors = DoctorSchedule::where('is_active', true)
+                                ->with('service')
+                                ->get();
         
         return view('antrian.ambil', compact('services', 'doctors'));
     }
@@ -69,10 +64,8 @@ class AntrianController extends Controller
      * Simpan antrian baru
      */
     public function store(Request $request)
-    {
-        // ⚠️ HAPUS bagian normalisasi gender (tidak diperlukan lagi)
-        
-        // ⚠️ UBAH validasi - data diambil dari user profile
+    {        
+        // ✅ PERBAIKAN: Tambah validasi doctor_id
         $request->validate([
             'service_id' => 'required|exists:services,id',
             'doctor_id' => 'nullable|exists:doctor_schedules,id',
@@ -102,17 +95,14 @@ class AntrianController extends Controller
             // ✅ SUDAH BENAR
             $queueNumber = $this->generateQueueNumber($request->service_id);
 
-            // ✅ SUDAH BENAR - simplify data
+            // ✅ PERBAIKAN: Tambah doctor_id ke data yang disimpan
             $queueData = [
                 'service_id' => $request->service_id,
                 'user_id' => $user->id,
+                'doctor_id' => $request->doctor_id, // ✅ TAMBAH INI
                 'number' => $queueNumber,
                 'status' => 'waiting',
             ];
-
-            if ($request->filled('doctor_id') && Schema::hasColumn('queues', 'doctor_id')) {
-                $queueData['doctor_id'] = $request->doctor_id;
-            }
 
             $queue = Queue::create($queueData);
 
@@ -135,7 +125,8 @@ class AntrianController extends Controller
      */
     public function show($id)
     {
-        $queue = Queue::with(['service', 'counter', 'user'])->findOrFail($id);
+        // ✅ TAMBAH: Load doctor schedule relationship
+        $queue = Queue::with(['service', 'counter', 'user', 'doctorSchedule'])->findOrFail($id);
         
         if ($queue->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
@@ -149,7 +140,8 @@ class AntrianController extends Controller
      */
     public function edit($id)
     {
-        $queue = Queue::with(['service', 'counter', 'user'])->findOrFail($id);
+        // ✅ TAMBAH: Load doctor schedule relationship
+        $queue = Queue::with(['service', 'counter', 'user', 'doctorSchedule'])->findOrFail($id);
         
         if ($queue->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');
@@ -162,13 +154,10 @@ class AntrianController extends Controller
 
         $services = Service::where('is_active', true)->get();
         
-        try {
-            $doctors = DB::table('doctor_schedules')
-                        ->where('is_active', true)
-                        ->get();
-        } catch (\Exception $e) {
-            $doctors = collect();
-        }
+        // ✅ PERBAIKAN: Ambil dari DoctorSchedule yang aktif
+        $doctors = DoctorSchedule::where('is_active', true)
+                                ->with('service')
+                                ->get();
         
         return view('antrian.edit', compact('queue', 'services', 'doctors'));
     }
@@ -197,14 +186,13 @@ class AntrianController extends Controller
         try {
             DB::beginTransaction();
 
-            $updateData = ['service_id' => $request->service_id];
+            $updateData = [
+                'service_id' => $request->service_id,
+                'doctor_id' => $request->doctor_id,  // ✅ TAMBAH INI
+            ];
             
             if ($queue->service_id != $request->service_id) {
                 $updateData['number'] = $this->generateQueueNumber($request->service_id);
-            }
-            
-            if ($request->filled('doctor_id') && Schema::hasColumn('queues', 'doctor_id')) {
-                $updateData['doctor_id'] = $request->doctor_id;
             }
 
             $queue->update($updateData);
@@ -255,7 +243,8 @@ class AntrianController extends Controller
      */
     public function ticket($id) // ✅ Route: GET /ticket/{queue}
     {
-        $queue = Queue::with(['service', 'counter', 'user'])->findOrFail($id);
+        // ✅ TAMBAH: Load doctor schedule relationship
+        $queue = Queue::with(['service', 'counter', 'user', 'doctorSchedule'])->findOrFail($id);
         
         if ($queue->user_id !== Auth::id()) {
             abort(403, 'Unauthorized action.');

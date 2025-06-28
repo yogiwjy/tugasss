@@ -1,6 +1,6 @@
 <?php
 // File: app/Http/Controllers/RiwayatController.php
-// PERBAIKAN LENGKAP untuk Riwayat Controller
+// PERBAIKAN SYNTAX ERROR pada RiwayatController
 
 namespace App\Http\Controllers;
 
@@ -15,9 +15,14 @@ class RiwayatController extends Controller
     public function index(Request $request)
     {
         try {
-            // ✅ Query yang diperbaiki dengan eager loading
-            $query = Queue::with(['service', 'user', 'counter', 'medicalRecord.doctor'])
-                          ->where('user_id', Auth::id());
+            // ✅ PERBAIKAN UTAMA: Tambah doctorSchedule ke eager loading
+            $query = Queue::with([
+                'service', 
+                'user', 
+                'counter', 
+                'doctorSchedule',        // ✅ TAMBAH INI - untuk dokter yang dipilih saat antrian
+                'medicalRecord.doctor'   // ✅ TETAP ADA - untuk dokter dari rekam medis
+            ])->where('user_id', Auth::id());
 
             // ✅ Filter berdasarkan poli/service jika ada
             if ($request->filled('poli')) {
@@ -61,8 +66,14 @@ class RiwayatController extends Controller
     public function export(Request $request)
     {
         try {
-            $query = Queue::with(['service', 'user', 'counter', 'medicalRecord.doctor'])
-                          ->where('user_id', Auth::id());
+            // ✅ TAMBAH doctorSchedule relationship
+            $query = Queue::with([
+                'service', 
+                'user', 
+                'counter', 
+                'doctorSchedule',
+                'medicalRecord.doctor'
+            ])->where('user_id', Auth::id());
 
             if ($request->filled('poli')) {
                 $query->whereHas('service', function($q) use ($request) {
@@ -103,7 +114,7 @@ class RiwayatController extends Controller
                         $antrian->poli ?? '-',
                         $antrian->formatted_tanggal,
                         $antrian->status_label,
-                        $antrian->doctor_name ?? '-',
+                        $antrian->doctor_name ?? '-',  // ✅ INI SEKARANG AKAN DAPAT DATA DARI DOCTOR_ID
                         $antrian->medicalRecord->chief_complaint ?? '-',
                         $antrian->medicalRecord->diagnosis ?? '-'
                     ]);
@@ -128,9 +139,15 @@ class RiwayatController extends Controller
     public function show($id)
     {
         try {
-            $antrian = Queue::with(['service', 'user', 'counter', 'medicalRecord.doctor'])
-                          ->where('user_id', Auth::id())
-                          ->findOrFail($id);
+            // ✅ TAMBAH doctorSchedule relationship
+            $antrian = Queue::with([
+                'service', 
+                'user', 
+                'counter', 
+                'doctorSchedule',
+                'medicalRecord.doctor'
+            ])->where('user_id', Auth::id())
+              ->findOrFail($id);
 
             return view('riwayat.detail', compact('antrian'));
             
