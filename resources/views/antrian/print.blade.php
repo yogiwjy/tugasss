@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tiket Antrian - {{ $antrian->no_antrian }}</title>
+    <title>Tiket Antrian - {{ $antrian->number }}</title>
     
     {{-- Bootstrap CSS untuk Print --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -117,9 +117,6 @@
             font-size: 13px;
         }
 
-
-        
-
         .ticket-footer {
             background: #f8f9fa;
             padding: 15px 20px;
@@ -162,45 +159,69 @@
         <div class="ticket-body">
             {{-- Nomor Antrian Besar --}}
             <div class="queue-number">
-                {{ $antrian->no_antrian }}
+                {{ $antrian->number }}
             </div>
 
             {{-- Informasi Detail --}}
             <div class="info-row">
                 <span class="info-label">Nama Pasien:</span>
-                <span class="info-value">{{ $antrian->name }}</span>
+                <span class="info-value">{{ $antrian->user->name ?? 'Walk-in' }}</span>
             </div>
 
             <div class="info-row">
                 <span class="info-label">Nomor HP:</span>
-                <span class="info-value">{{ $antrian->phone }}</span>
+                <span class="info-value">{{ $antrian->user->phone ?? '-' }}</span>
             </div>
 
             <div class="info-row">
                 <span class="info-label">Jenis Kelamin:</span>
-                <span class="info-value">{{ $antrian->gender }}</span>
+                <span class="info-value">{{ $antrian->user->gender ?? '-' }}</span>
             </div>
 
             <div class="info-row">
-                <span class="info-label">Poli:</span>
-                <span class="info-value">{{ $antrian->poli }}</span>
-            </div>
-
-            <div class="info-row">
-                <span class="info-label">Dokter:</span>
-                <span class="info-value">{{ $antrian->doctor->nama ?? 'Belum ditentukan' }}</span>
+                <span class="info-label">Layanan:</span>
+                <span class="info-value">{{ $antrian->service->name ?? '-' }}</span>
             </div>
 
             <div class="info-row">
                 <span class="info-label">Tanggal:</span>
-                <span class="info-value">{{ $antrian->formatted_tanggal }}</span>
+                <span class="info-value">{{ $antrian->created_at->format('d F Y') }}</span>
             </div>
+
+            <div class="info-row">
+                <span class="info-label">Waktu Daftar:</span>
+                <span class="info-value">{{ $antrian->created_at->format('H:i') }}</span>
+            </div>
+
+            <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span class="info-value">
+                    @switch($antrian->status)
+                        @case('waiting')
+                            Menunggu
+                            @break
+                        @case('serving')
+                            Sedang Dilayani
+                            @break
+                        @case('finished')
+                            Selesai
+                            @break
+                        @case('canceled')
+                            Dibatalkan
+                            @break
+                        @default
+                            {{ ucfirst($antrian->status) }}
+                    @endswitch
+                </span>
+            </div>
+        </div>
 
         {{-- Footer Tiket --}}
         <div class="ticket-footer">
             <strong>HARAP SIMPAN TIKET INI</strong><br>
             Tunjukkan tiket saat dipanggil<br>
-            <small>Terima kasih atas kepercayaan Anda</small>
+            <small>Terima kasih atas kepercayaan Anda</small><br>
+            <small class="mt-2 d-block">Dicetak: {{ now()->format('d/m/Y H:i:s') }}</small>
         </div>
     </div>
 
@@ -215,18 +236,14 @@
             <button onclick="window.print()" class="btn btn-primary btn-sm me-2">
                 <i class="fas fa-print"></i> Print Tiket
             </button>
+            <a href="{{ route('antrian.index') }}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Kembali
+            </a>
         </div>
     </div>
 
     {{-- Auto Print Script --}}
     <script>
-        // Auto print setelah halaman load (opsional)
-        // window.onload = function() {
-        //     setTimeout(function() {
-        //         window.print();
-        //     }, 1000);
-        // }
-
         // Print function
         function printTicket() {
             window.print();
@@ -235,6 +252,12 @@
         // Close after print (opsional)
         window.onafterprint = function() {
             // window.close();
+        }
+
+        // Auto focus untuk print
+        window.onload = function() {
+            // Optional: Auto focus on print button
+            document.querySelector('.btn-primary').focus();
         }
     </script>
 </body>

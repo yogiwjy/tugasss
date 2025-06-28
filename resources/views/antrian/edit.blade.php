@@ -61,7 +61,7 @@
                                value="{{ $queue->number }}"
                                readonly
                                tabindex="-1">
-                        <small class="form-help">Nomor antrian tidak dapat diubah</small>
+                        <small class="form-help">Nomor antrian akan berubah jika Anda mengubah layanan</small>
                     </div>
                 </div>
             </div>
@@ -81,7 +81,7 @@
                                class="form-input readonly-input"
                                id="name"
                                name="name"
-                               value="{{ old('name', $queue->name) }}"
+                               value="{{ $queue->user->name }}"
                                readonly
                                tabindex="-1">
                     </div>
@@ -93,7 +93,7 @@
                                class="form-input readonly-input"
                                id="phone"
                                name="phone"
-                               value="{{ old('phone', $queue->phone) }}"
+                               value="{{ $queue->user->phone ?? 'Belum diisi' }}"
                                readonly
                                tabindex="-1">
                     </div>
@@ -105,7 +105,7 @@
                                class="form-input readonly-input"
                                id="gender"
                                name="gender"
-                               value="{{ old('gender', $queue->gender) }}"
+                               value="{{ $queue->user->gender ?? 'Belum diisi' }}"
                                readonly
                                tabindex="-1">
                     </div>
@@ -116,60 +116,83 @@
             <div class="form-section">
                 <h6 class="form-section-title">
                     <i class="fas fa-stethoscope"></i>
-                    Informasi Medis
+                    Informasi Layanan
                 </h6>
 
                 <div class="form-grid">
-                    <!-- Poli - EDITABLE -->
+                    <!-- Layanan - EDITABLE -->
                     <div class="form-group">
-                        <label for="poli" class="form-label">Poli</label>
-                        <select class="form-select @error('poli') is-invalid @enderror"
-                                id="poli"
-                                name="poli"
-                                required>
-                            <option value="">-- Pilih Poli --</option>
-                            @foreach($services as $p)
-                                <option value="{{ $p->nama }}"
-                                        {{ old('poli', $queue->poli) == $p->nama ? 'selected' : '' }}>
-                                    {{ $p->nama }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('poli')
-                            <div class="form-error">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <!-- Dokter - EDITABLE -->
-                    <div class="form-group">
-                        <label for="doctor_id" class="form-label">Dokter</label>
-                        <select class="form-select @error('doctor_id') is-invalid @enderror"
-                                id="doctor_id"
-                                name="doctor_id"
-                                required>
-                            <option value="">-- Pilih Dokter --</option>
-                            @foreach($doctors as $doctor)
-                                <option value="{{ $doctor->doctor_id }}"
-                                        data-specialization="{{ $doctor->spesialisasi }}"
-                                        {{ old('doctor_id', $queue->doctor_id) == $doctor->doctor_id ? 'selected' : '' }}>
-                                    {{ $doctor->nama }} - {{ $doctor->spesialisasi }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('doctor_id')
-                            <div class="form-error">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <!-- Tanggal Antrian - CUSTOM PICKER -->
-                    <div class="form-group">
-                        <label for="tanggal_antrian_display" class="form-label">Tanggal Antrian</label>
-                        <div id="tanggal-antrian-picker" class="tanggal-antrian-picker">
-                            {{-- Date options will be rendered here by JavaScript --}}
+                        <label for="service_id" class="form-label">Layanan</label>
+                        <div class="custom-dropdown" data-name="service_id">
+                            <div class="dropdown-trigger @error('service_id') is-invalid @enderror" id="service-trigger">
+                                <span class="dropdown-text">{{ old('service_id', $queue->service->name ?? '-- Pilih Layanan --') }}</span>
+                                <i class="fas fa-chevron-down dropdown-icon"></i>
+                            </div>
+                            <div class="dropdown-menu" id="service-menu">
+                                <div class="dropdown-search">
+                                    <input type="text" placeholder="Cari layanan..." class="search-input">
+                                    <i class="fas fa-search search-icon"></i>
+                                </div>
+                                <div class="dropdown-options">
+                                    @foreach($services as $service)
+                                        <div class="dropdown-option" 
+                                             data-value="{{ $service->id }}" 
+                                             data-text="{{ $service->name }}"
+                                             {{ old('service_id', $queue->service_id) == $service->id ? 'data-selected="true"' : '' }}>
+                                            <div class="service-info">
+                                                <span class="service-name">{{ $service->name }}</span>
+                                                <span class="service-prefix">Kode: {{ $service->prefix }}</span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <input type="hidden" name="service_id" id="service_id" value="{{ old('service_id', $queue->service_id) }}" required>
                         </div>
-                        {{-- Hidden input to store the selected date value for form submission --}}
-                        <input type="hidden" name="tanggal" id="tanggal" value="{{ old('tanggal', $queue->tanggal->format('Y-m-d')) }}" required>
-                        @error('tanggal')
+                        @error('service_id')
+                            <div class="form-error">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <!-- Dokter - EDITABLE (OPSIONAL) -->
+                    <div class="form-group">
+                        <label for="doctor_id" class="form-label">Dokter (Opsional)</label>
+                        <div class="custom-dropdown" data-name="doctor_id">
+                            <div class="dropdown-trigger @error('doctor_id') is-invalid @enderror" id="doctor-trigger">
+                                <span class="dropdown-text">-- Pilih Dokter --</span>
+                                <i class="fas fa-chevron-down dropdown-icon"></i>
+                            </div>
+                            <div class="dropdown-menu" id="doctor-menu">
+                                <div class="dropdown-search">
+                                    <input type="text" placeholder="Cari dokter..." class="search-input">
+                                    <i class="fas fa-search search-icon"></i>
+                                </div>
+                                <div class="dropdown-options">
+                                    <div class="dropdown-option" data-value="" data-text="Tidak memilih dokter khusus">
+                                        <span>Tidak memilih dokter khusus</span>
+                                    </div>
+                                    @if(isset($doctors) && $doctors->count() > 0)
+                                        @foreach($doctors as $doctor)
+                                            <div class="dropdown-option" 
+                                                 data-value="{{ $doctor->id }}" 
+                                                 data-text="{{ $doctor->doctor_name }}">
+                                                <div class="doctor-info">
+                                                    <span class="doctor-name">{{ $doctor->doctor_name }}</span>
+                                                    @if(isset($doctor->service))
+                                                        <span class="doctor-specialization">{{ $doctor->service->name }}</span>
+                                                    @endif
+                                                    @if(isset($doctor->start_time) && isset($doctor->end_time))
+                                                        <span class="doctor-time">{{ $doctor->start_time }} - {{ $doctor->end_time }}</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                            </div>
+                            <input type="hidden" name="doctor_id" id="doctor_id" value="{{ old('doctor_id') }}">
+                        </div>
+                        @error('doctor_id')
                             <div class="form-error">{{ $message }}</div>
                         @enderror
                     </div>
@@ -182,7 +205,7 @@
                     <i class="fas fa-save"></i>
                     Update Antrian
                 </button>
-                <a href="/antrian" class="btn btn-secondary">
+                <a href="{{ route('antrian.index') }}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left"></i>
                     Kembali
                 </a>
@@ -193,64 +216,7 @@
 
 <!-- Form Styles -->
 <style>
-/* Add custom styles for the new date picker */
-.tanggal-antrian-picker {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px;
-    border: 2px solid #ecf0f1;
-    border-radius: 8px;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.date-option {
-    padding: 10px 15px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    cursor: pointer;
-    background-color: #f8f9fa;
-    color: #34495e;
-    font-size: 14px;
-    text-align: center;
-    transition: all 0.2s ease;
-    flex: 1 1 auto; /* Allow items to grow and shrink */
-    min-width: 80px; /* Minimum width for each date option */
-}
-
-.date-option:hover {
-    background-color: #e9ecef;
-    border-color: #ced4da;
-}
-
-.date-option.selected {
-    background-color: #3498db;
-    color: white;
-    border-color: #3498db;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.2);
-}
-
-.date-option.disabled {
-    background-color: #e9ecef;
-    color: #adb5bd;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-/* Ensure the date picker fills the grid column */
-.form-group:has(.tanggal-antrian-picker) {
-    grid-column: span 2; /* Span full width on larger screens */
-}
-
-@media (max-width: 768px) {
-    .form-group:has(.tanggal-antrian-picker) {
-        grid-column: span 1; /* Back to single column on mobile */
-    }
-}
-
-/* Existing styles */
+/* Existing styles from the original file */
 .page-header {
     background: white;
     padding: 25px;
@@ -415,17 +381,171 @@
     font-size: 16px;
 }
 
-/* Enhanced Mobile Responsive */
+/* Custom Dropdown Styles */
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.custom-dropdown .dropdown-trigger {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+    user-select: none;
+    min-height: 48px;
+}
+
+.custom-dropdown .dropdown-trigger:hover {
+    border-color: #bdc3c7;
+}
+
+.custom-dropdown .dropdown-trigger.active {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.custom-dropdown .dropdown-trigger.is-invalid {
+    border-color: #e74c3c;
+}
+
+.custom-dropdown .dropdown-text {
+    flex: 1;
+    color: #2c3e50;
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.custom-dropdown .dropdown-text.placeholder {
+    color: #95a5a6;
+}
+
+.custom-dropdown .dropdown-icon {
+    color: #95a5a6;
+    transition: transform 0.3s ease;
+    font-size: 12px;
+}
+
+.custom-dropdown .dropdown-trigger.active .dropdown-icon {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 50px;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    padding: 10px 0;
+    display: none;
+    z-index: 2001;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.custom-dropdown .dropdown-search {
+    position: relative;
+    padding: 10px;
+    border-bottom: 1px solid #ecf0f1;
+    background: #f8f9fa;
+}
+
+.custom-dropdown .search-input {
+    width: 100%;
+    padding: 8px 35px 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+}
+
+.custom-dropdown .search-input:focus {
+    border-color: #3498db;
+}
+
+.custom-dropdown .search-icon {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #95a5a6;
+    font-size: 12px;
+}
+
+.custom-dropdown .dropdown-options {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.custom-dropdown .dropdown-option {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f8f9fa;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+.custom-dropdown .dropdown-option:hover {
+    background-color: #f8f9fa;
+}
+
+.custom-dropdown .dropdown-option.selected {
+    background-color: #3498db;
+    color: white;
+}
+
+.custom-dropdown .dropdown-option.hidden {
+    display: none;
+}
+
+.custom-dropdown .service-info,
+.custom-dropdown .doctor-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.custom-dropdown .service-name,
+.custom-dropdown .doctor-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.custom-dropdown .service-prefix {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.custom-dropdown .doctor-specialization,
+.custom-dropdown .doctor-time {
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.custom-dropdown .dropdown-option.selected .service-prefix,
+.custom-dropdown .dropdown-option.selected .doctor-specialization,
+.custom-dropdown .dropdown-option.selected .doctor-time {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Mobile Responsive */
 @media (max-width: 768px) {
-    .page-header {
-        padding: 20px;
-        margin-bottom: 20px;
-    }
-
-    .page-header h1 {
-        font-size: 1.5rem;
-    }
-
     .form-grid {
         grid-template-columns: 1fr !important;
         gap: 15px;
@@ -437,43 +557,14 @@
         border-radius: 10px;
     }
 
-    .form-section {
-        margin-bottom: 25px;
-    }
-
-    .form-section-title {
-        font-size: 1rem;
-        margin-bottom: 15px;
-        padding-bottom: 8px;
-    }
-
-    .form-input,
-    .form-select {
-        padding: 14px 15px;
-        font-size: 16px; /* Prevents zoom on iOS */
-        border-radius: 8px;
-    }
-
     .form-actions {
         flex-direction: column;
         gap: 12px;
-        margin-top: 25px;
     }
 
     .btn-lg {
-        padding: 16px 20px;
-        font-size: 16px;
         width: 100%;
         justify-content: center;
-    }
-
-    .alert {
-        margin: 0 10px 20px 10px;
-        padding: 15px;
-    }
-
-    .alert-content {
-        font-size: 14px;
     }
 }
 
@@ -491,88 +582,6 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
 }
-
-/* Additional Mobile Fixes */
-@media (max-width: 480px) {
-    .main-content {
-        padding: 15px 10px;
-    }
-
-    .page-header {
-        padding: 15px;
-        margin-bottom: 15px;
-    }
-
-    .page-header h1 {
-        font-size: 1.3rem;
-        margin-bottom: 5px;
-    }
-
-    .page-header p {
-        font-size: 13px;
-    }
-
-    .form-card {
-        padding: 15px;
-        margin: 0 5px;
-    }
-
-    .form-section-title {
-        font-size: 0.95rem;
-        gap: 8px;
-    }
-
-    .form-label {
-        font-size: 13px;
-        margin-bottom: 6px;
-    }
-
-    .form-input,
-    .form-select {
-        padding: 12px;
-        font-size: 16px;
-    }
-
-    .form-help {
-        font-size: 11px;
-    }
-
-    .form-error {
-        font-size: 11px;
-    }
-
-    .btn-lg {
-        padding: 14px 18px;
-        font-size: 15px;
-    }
-
-    .alert {
-        margin: 0 5px 15px 5px;
-        padding: 12px;
-    }
-
-    .alert-close {
-        top: 10px;
-        right: 10px;
-        font-size: 16px;
-    }
-}
-
-/* Tablet Responsive */
-@media (min-width: 769px) and (max-width: 1024px) {
-    .form-grid {
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 18px;
-    }
-
-    .form-card {
-        padding: 25px;
-    }
-
-    .main-content {
-        padding: 25px;
-    }
-}
 </style>
 
 <!-- JavaScript -->
@@ -580,33 +589,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('editAntrianForm');
     const updateBtn = document.getElementById('updateBtn');
-    const doctorSelect = document.getElementById('doctor_id');
 
-    // Disable semua readonly input
-    const readonlyInputs = document.querySelectorAll('.readonly-input');
-    readonlyInputs.forEach(function(input) {
-        input.addEventListener('click', function(e) {
-            e.preventDefault();
-            return false;
-        });
-
-        input.addEventListener('focus', function(e) {
-            e.preventDefault();
-            this.blur();
-            return false;
-        });
-    });
-
-    // Show doctor specialization when selected
-    if (doctorSelect) {
-        doctorSelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value) {
-                const specialization = selectedOption.getAttribute('data-specialization');
-                console.log('Dokter dipilih:', selectedOption.text);
-            }
-        });
-    }
+    // Initialize Custom Dropdowns
+    initCustomDropdowns();
 
     // Prevent double submission
     if (form) {
@@ -624,80 +609,148 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // --- Custom Date Picker Logic ---
-    const tanggalAntrianPicker = document.getElementById('tanggal-antrian-picker');
-    // The actual hidden input for form submission, retrieve its initial value
-    const hiddenTanggalInput = document.getElementById('tanggal');
-    const initialSelectedDate = hiddenTanggalInput.value ? new Date(hiddenTanggalInput.value) : null;
+    function initCustomDropdowns() {
+        const dropdowns = document.querySelectorAll('.custom-dropdown');
 
-    function formatDateForInput(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`; // YYYY-MM-DD format
-    }
+        dropdowns.forEach(dropdown => {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const options = dropdown.querySelectorAll('.dropdown-option');
+            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+            const searchInput = dropdown.querySelector('.search-input');
+            const dropdownText = dropdown.querySelector('.dropdown-text');
 
-    function formatDisplayDate(date) {
-        const options = { weekday: 'short', month: 'short', day: 'numeric' };
-        return date.toLocaleDateString('id-ID', options); // e.g., "Kam, 20 Jun"
-    }
-
-    function renderDateOptions() {
-        tanggalAntrianPicker.innerHTML = ''; // Clear previous options
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize to start of day for comparison
-
-        for (let i = 0; i < 7; i++) { // Generate options for the next 7 days
-            const date = new Date(today);
-            date.setDate(today.getDate() + i);
-
-            const dateString = formatDateForInput(date);
-            const displayString = formatDisplayDate(date);
-
-            const dateOption = document.createElement('div');
-            dateOption.classList.add('date-option');
-            dateOption.setAttribute('data-date', dateString);
-            dateOption.textContent = displayString;
-
-            // Check if this date option should be selected
-            if (initialSelectedDate && formatDateForInput(initialSelectedDate) === dateString) {
-                dateOption.classList.add('selected');
-            } else if (!initialSelectedDate && i === 0) { // If no initial date, select today by default
-                dateOption.classList.add('selected');
-                hiddenTanggalInput.value = dateString; // Set hidden input to today's date
+            // Set initial state
+            const currentValue = hiddenInput.value;
+            if (currentValue) {
+                const selectedOption = dropdown.querySelector(`[data-value="${currentValue}"]`);
+                if (selectedOption) {
+                    selectOption(selectedOption, dropdown);
+                }
             }
 
-            dateOption.addEventListener('click', function() {
-                // Remove selected class from all options
-                tanggalAntrianPicker.querySelectorAll('.date-option').forEach(option => {
-                    option.classList.remove('selected');
+            // Trigger click
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Close other dropdowns
+                closeAllDropdowns();
+                
+                // Toggle current dropdown
+                const isOpen = menu.classList.contains('show');
+                if (!isOpen) {
+                    openDropdown(dropdown);
+                } else {
+                    closeDropdown(dropdown);
+                }
+            });
+
+            // Option click
+            options.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    selectOption(this, dropdown);
+                    closeDropdown(dropdown);
                 });
-                // Add selected class to the clicked option
-                this.classList.add('selected');
-                // Update the hidden input value
-                hiddenTanggalInput.value = this.getAttribute('data-date');
             });
-            tanggalAntrianPicker.appendChild(dateOption);
+
+            // Search functionality
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const query = this.value.toLowerCase();
+                    options.forEach(option => {
+                        const text = option.textContent.toLowerCase();
+                        if (text.includes(query)) {
+                            option.classList.remove('hidden');
+                        } else {
+                            option.classList.add('hidden');
+                        }
+                    });
+                });
+
+                searchInput.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
+        });
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.custom-dropdown')) {
+                closeAllDropdowns();
+            }
+        });
+
+        // Close dropdowns on escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAllDropdowns();
+            }
+        });
+
+        function openDropdown(dropdown) {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const searchInput = dropdown.querySelector('.search-input');
+
+            trigger.classList.add('active');
+            menu.classList.add('show');
+
+            // Focus search input
+            if (searchInput) {
+                setTimeout(() => {
+                    searchInput.focus();
+                }, 100);
+            }
         }
-    }
 
-    // Initial render of date options
-    renderDateOptions();
+        function closeDropdown(dropdown) {
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            const menu = dropdown.querySelector('.dropdown-menu');
+            const searchInput = dropdown.querySelector('.search-input');
 
-    // Re-select the `old('tanggal')` value (or the one from $queue) if it exists
-    // This part is crucial for making sure the pre-filled date gets selected on the custom picker.
-    if (hiddenTanggalInput.value) {
-        const previouslySelected = tanggalAntrianPicker.querySelector(`[data-date="${hiddenTanggalInput.value}"]`);
-        if (previouslySelected) {
-            tanggalAntrianPicker.querySelectorAll('.date-option').forEach(option => {
-                option.classList.remove('selected');
+            trigger.classList.remove('active');
+            menu.classList.remove('show');
+
+            // Clear search
+            if (searchInput) {
+                searchInput.value = '';
+                dropdown.querySelectorAll('.dropdown-option').forEach(option => {
+                    option.classList.remove('hidden');
+                });
+            }
+        }
+
+        function closeAllDropdowns() {
+            dropdowns.forEach(dropdown => {
+                closeDropdown(dropdown);
             });
-            previouslySelected.classList.add('selected');
-        } else {
-            // If the $queue date is not within the next 7 days, we might need to handle it.
-            // For now, it will default to today. You might consider adding a message or
-            // dynamically adding that specific date as an option if it's outside the 7-day range.
-            console.warn("Tanggal antrian yang ada tidak ditemukan di pilihan 7 hari ke depan.");
+        }
+
+        function selectOption(option, dropdown) {
+            const value = option.getAttribute('data-value');
+            const text = option.getAttribute('data-text') || option.textContent.trim();
+            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+            const dropdownText = dropdown.querySelector('.dropdown-text');
+
+            // Update hidden input
+            hiddenInput.value = value;
+
+            // Update display text
+            dropdownText.textContent = text;
+            dropdownText.classList.remove('placeholder');
+
+            // Update selected state
+            dropdown.querySelectorAll('.dropdown-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            option.classList.add('selected');
+
+            // Remove invalid state
+            const trigger = dropdown.querySelector('.dropdown-trigger');
+            trigger.classList.remove('is-invalid');
         }
     }
 });

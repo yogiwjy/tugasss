@@ -15,7 +15,6 @@ class Queue extends Model
         'counter_id',
         'service_id',
         'user_id',
-        'doctor_id',  // ✅ TAMBAH doctor_id
         'number',
         'status',
         'called_at',
@@ -47,123 +46,12 @@ class Queue extends Model
         return $this->belongsTo(User::class);
     }
 
-    // ✅ TAMBAH: Relationship ke DoctorSchedule
-    public function doctorSchedule(): BelongsTo
-    {
-        return $this->belongsTo(DoctorSchedule::class, 'doctor_id');
-    }
-
     public function medicalRecord(): HasOne
     {
         return $this->hasOne(MedicalRecord::class);
     }
 
     // ✅ ACCESSOR METHODS YANG BENAR
-
-    /**
-     * Get nama pasien dari user yang terkait
-     */
-    public function getNameAttribute(): ?string
-    {
-        return $this->user ? $this->user->name : null;
-    }
-
-    /**
-     * Get phone pasien dari user yang terkait  
-     */
-    public function getPhoneAttribute(): ?string
-    {
-        return $this->user ? $this->user->phone : null;
-    }
-
-    /**
-     * Get gender pasien dari user yang terkait
-     */
-    public function getGenderAttribute(): ?string
-    {
-        return $this->user ? $this->user->gender : null;
-    }
-
-    /**
-     * Get alamat pasien dari user yang terkait
-     */
-    public function getAddressAttribute(): ?string
-    {
-        return $this->user ? $this->user->address : null;
-    }
-
-    /**
-     * Get nomor KTP pasien dari user yang terkait
-     */
-    public function getNomorKtpAttribute(): ?string
-    {
-        return $this->user ? $this->user->nomor_ktp : null;
-    }
-
-    /**
-     * Get nama layanan/poli dari service yang terkait
-     */
-    public function getPoliAttribute(): ?string
-    {
-        return $this->service ? $this->service->name : null;
-    }
-
-    /**
-     * ✅ PERBAIKAN UTAMA: Get dokter dari doctor_id (prioritas utama) atau medical record
-     */
-    public function getDoctorAttribute()
-    {
-        // Prioritas 1: Dari doctor_id yang dipilih saat ambil antrian
-        if ($this->doctor_id && $this->doctorSchedule) {
-            return (object) [
-                'id' => $this->doctorSchedule->id,
-                'name' => $this->doctorSchedule->doctor_name,
-                'service' => $this->doctorSchedule->service,
-            ];
-        }
-        
-        // Prioritas 2: Dari medical record (jika sudah ada rekam medis)
-        if ($this->medicalRecord && $this->medicalRecord->doctor) {
-            return $this->medicalRecord->doctor;
-        }
-        
-        return null;
-    }
-
-    /**
-     * ✅ PERBAIKAN UTAMA: Get nama dokter yang dipilih saat antrian atau dari rekam medis
-     */
-    public function getDoctorNameAttribute(): ?string
-    {
-        // Prioritas 1: Dari doctor_schedule yang dipilih saat ambil antrian
-        if ($this->doctor_id && $this->doctorSchedule) {
-            return $this->doctorSchedule->doctor_name;
-        }
-        
-        // Prioritas 2: Dari medical record (jika sudah ada rekam medis)
-        if ($this->medicalRecord && $this->medicalRecord->doctor) {
-            return $this->medicalRecord->doctor->name;
-        }
-        
-        // Fallback: Belum ditentukan
-        return null;
-    }
-
-    /**
-     * Get tanggal antrian dalam format yang mudah dibaca
-     */
-    public function getFormattedTanggalAttribute(): string
-    {
-        return $this->created_at->format('d F Y');
-    }
-
-    /**
-     * Get tanggal antrian lengkap dengan hari
-     */
-    public function getTanggalAttribute()
-    {
-        return $this->created_at;
-    }
 
     /**
      * Get status badge color untuk UI
@@ -191,6 +79,14 @@ class Queue extends Model
             'canceled' => 'Dibatalkan',
             default => ucfirst($this->status)
         };
+    }
+
+    /**
+     * Get tanggal antrian dalam format yang mudah dibaca
+     */
+    public function getFormattedTanggalAttribute(): string
+    {
+        return $this->created_at->format('d F Y');
     }
 
     // ✅ HELPER METHODS

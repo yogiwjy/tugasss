@@ -50,16 +50,16 @@ Route::middleware(['auth:web', 'role.user'])->group(function () {
     // Riwayat Pasien
     Route::get('/riwayatkunjungan', [RiwayatController::class, 'index'])->name('riwayat.index');
 
-    // Antrian Routes
-    Route::prefix('antrian')->name('antrian.')->group(function () {
-        Route::get('/', [AntrianController::class, 'index'])->name('index');
-        Route::get('/create', [AntrianController::class, 'create'])->name('create');
-        Route::post('/store', [AntrianController::class, 'store'])->name('store');
-        Route::get('/{queue}', [AntrianController::class, 'show'])->name('show');
-        Route::get('/{queue}/edit', [AntrianController::class, 'edit'])->name('edit'); 
-        Route::put('/{queue}', [AntrianController::class, 'update'])->name('update'); 
-        Route::delete('/{queue}', [AntrianController::class, 'destroy'])->name('destroy');
-        Route::get('/{queue}/print', [AntrianController::class, 'print'])->name('print'); 
+    // ✅ PERBAIKAN: Antrian Routes dengan struktur yang konsisten
+    Route::prefix('antrian')->name('antrian.')->controller(AntrianController::class)->group(function () {
+        Route::get('/', 'index')->name('index');                           // GET /antrian
+        Route::get('/create', 'create')->name('create');                   // GET /antrian/create
+        Route::post('/', 'store')->name('store');                          // POST /antrian
+        Route::get('/{queue}', 'show')->name('show');                      // GET /antrian/{id}
+        Route::get('/{queue}/edit', 'edit')->name('edit');                 // GET /antrian/{id}/edit
+        Route::put('/{queue}', 'update')->name('update');                  // PUT /antrian/{id}
+        Route::delete('/{queue}', 'destroy')->name('destroy');             // DELETE /antrian/{id}
+        Route::get('/{queue}/print', 'print')->name('print');              // GET /antrian/{id}/print
     });
 
     // Doctor Info
