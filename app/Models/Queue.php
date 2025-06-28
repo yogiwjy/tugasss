@@ -1,19 +1,20 @@
 <?php
 // File: app/Models/Queue.php
-// FIX: Remove undefined doctor relationship
+// PERBAIKAN LENGKAP untuk Queue Model
 
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Carbon\Carbon;
 
 class Queue extends Model
 {
     protected $fillable = [
         'counter_id',
         'service_id',
-        'user_id', // ✅ CORRECT: user_id bukan patient_id atau doctor_id
+        'user_id',
         'number',
         'status',
         'called_at',
@@ -29,7 +30,7 @@ class Queue extends Model
         'finished_at' => 'datetime',
     ];
 
-    // ✅ CORRECT: Relationship yang sesuai dengan struktur database
+    // ✅ RELATIONSHIP YANG BENAR
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
@@ -40,25 +41,69 @@ class Queue extends Model
         return $this->belongsTo(Counter::class);
     }
 
-    // ✅ CORRECT: Relationship ke user (pasien)
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // ✅ REMOVED: Hapus relationship doctor karena tidak ada doctor_id di queues table
-    // public function doctor(): BelongsTo
-    // {
-    //     return $this->belongsTo(User::class, 'doctor_id');
-    // }
-
-    // ✅ CORRECT: Relationship ke medical record
     public function medicalRecord(): HasOne
     {
         return $this->hasOne(MedicalRecord::class);
     }
 
-    // ✅ ADDED: Helper method untuk mendapatkan dokter dari medical record (jika ada)
+    // ✅ ACCESSOR METHODS YANG BENAR
+
+    /**
+     * Get nama pasien dari user yang terkait
+     */
+    public function getNameAttribute(): ?string
+    {
+        return $this->user ? $this->user->name : null;
+    }
+
+    /**
+     * Get phone pasien dari user yang terkait  
+     */
+    public function getPhoneAttribute(): ?string
+    {
+        return $this->user ? $this->user->phone : null;
+    }
+
+    /**
+     * Get gender pasien dari user yang terkait
+     */
+    public function getGenderAttribute(): ?string
+    {
+        return $this->user ? $this->user->gender : null;
+    }
+
+    /**
+     * Get alamat pasien dari user yang terkait
+     */
+    public function getAddressAttribute(): ?string
+    {
+        return $this->user ? $this->user->address : null;
+    }
+
+    /**
+     * Get nomor KTP pasien dari user yang terkait
+     */
+    public function getNomorKtpAttribute(): ?string
+    {
+        return $this->user ? $this->user->nomor_ktp : null;
+    }
+
+    /**
+     * Get nama layanan/poli dari service yang terkait
+     */
+    public function getPoliAttribute(): ?string
+    {
+        return $this->service ? $this->service->name : null;
+    }
+
+    /**
+     * Get dokter dari medical record yang terkait
+     */
     public function getDoctorAttribute()
     {
         // Jika ada medical record, ambil dokter dari sana
@@ -70,7 +115,9 @@ class Queue extends Model
         return null;
     }
 
-    // ✅ ADDED: Helper method untuk mendapatkan nama dokter
+    /**
+     * Get nama dokter
+     */
     public function getDoctorNameAttribute(): ?string
     {
         if ($this->doctor) {
@@ -80,37 +127,117 @@ class Queue extends Model
         return null;
     }
 
-    // Helper methods untuk status
-    public function canEdit(): bool
-    {
-        return in_array($this->status, ['waiting']);
-    }
-
-    public function canCancel(): bool
-    {
-        return in_array($this->status, ['waiting']);
-    }
-
-    public function canPrint(): bool
-    {
-        return in_array($this->status, ['waiting', 'serving', 'finished']);
-    }
-
-    // Accessor untuk format tanggal
+    /**
+     * Get tanggal antrian dalam format yang mudah dibaca
+     */
     public function getFormattedTanggalAttribute(): string
     {
         return $this->created_at->format('d F Y');
     }
 
-    // Accessor untuk status badge
+    /**
+     * Get tanggal antrian lengkap dengan hari
+     */
+    public function getTanggalAttribute()
+    {
+        return $this->created_at;
+    }
+
+    /**
+     * Get status badge color untuk UI
+     */
     public function getStatusBadgeAttribute(): string
     {
         return match($this->status) {
             'waiting' => 'warning',
-            'serving' => 'info',
+            'serving' => 'info', 
             'finished' => 'success',
             'canceled' => 'danger',
             default => 'secondary'
         };
+    }
+
+    /**
+     * Get status dalam bahasa Indonesia
+     */
+    public function getStatusLabelAttribute(): string
+    {
+        return match($this->status) {
+            'waiting' => 'Menunggu',
+            'serving' => 'Sedang Dilayani',
+            'finished' => 'Selesai',
+            'canceled' => 'Dibatalkan',
+            default => ucfirst($this->status)
+        };
+    }
+
+    // ✅ HELPER METHODS
+
+    /**
+     * Check apakah antrian bisa diedit
+     */
+    public function canEdit(): bool
+    {
+        return in_array($this->status, ['waiting']);
+    }
+
+    /**
+     * Check apakah antrian bisa dibatalkan
+     */
+    public function canCancel(): bool
+    {
+        return in_array($this->status, ['waiting']);
+    }
+
+    /**
+     * Check apakah antrian bisa diprint
+     */
+    public function canPrint(): bool
+    {
+        return in_array($this->status, ['waiting', 'serving', 'finished']);
+    }
+
+    /**
+     * Check apakah antrian sudah selesai atau dibatalkan
+     */
+    public function isCompleted(): bool
+    {
+        return in_array($this->status, ['finished', 'canceled']);
+    }
+
+    // ✅ SCOPE METHODS
+
+    /**
+     * Scope untuk antrian hari ini
+     */
+    public function scopeToday($query)
+    {
+        return $query->whereDate('created_at', today());
+    }
+
+    /**
+     * Scope untuk antrian berdasarkan user tertentu
+     */
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Scope untuk antrian berdasarkan service/poli
+     */
+    public function scopeForService($query, $serviceName)
+    {
+        return $query->whereHas('service', function($q) use ($serviceName) {
+            $q->where('name', $serviceName);
+        });
+    }
+
+    /**
+     * Scope untuk antrian berdasarkan status
+     */
+    public function scopeWithStatus($query, $status)
+    {
+        return $query->where('status', $status);
     }
 }
