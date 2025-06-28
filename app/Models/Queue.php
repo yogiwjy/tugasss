@@ -1,5 +1,6 @@
 <?php
 // File: app/Models/Queue.php
+// FIX: Remove undefined doctor relationship
 
 namespace App\Models;
 
@@ -12,7 +13,7 @@ class Queue extends Model
     protected $fillable = [
         'counter_id',
         'service_id',
-        'user_id', // GANTI dari patient_id ke user_id
+        'user_id', // ✅ CORRECT: user_id bukan patient_id atau doctor_id
         'number',
         'status',
         'called_at',
@@ -28,7 +29,7 @@ class Queue extends Model
         'finished_at' => 'datetime',
     ];
 
-    // Relationship yang sudah ada
+    // ✅ CORRECT: Relationship yang sesuai dengan struktur database
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
@@ -39,16 +40,44 @@ class Queue extends Model
         return $this->belongsTo(Counter::class);
     }
 
-    // Relationship ke user (bukan patient)
+    // ✅ CORRECT: Relationship ke user (pasien)
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relationship ke medical record
+    // ✅ REMOVED: Hapus relationship doctor karena tidak ada doctor_id di queues table
+    // public function doctor(): BelongsTo
+    // {
+    //     return $this->belongsTo(User::class, 'doctor_id');
+    // }
+
+    // ✅ CORRECT: Relationship ke medical record
     public function medicalRecord(): HasOne
     {
         return $this->hasOne(MedicalRecord::class);
+    }
+
+    // ✅ ADDED: Helper method untuk mendapatkan dokter dari medical record (jika ada)
+    public function getDoctorAttribute()
+    {
+        // Jika ada medical record, ambil dokter dari sana
+        if ($this->medicalRecord && $this->medicalRecord->doctor) {
+            return $this->medicalRecord->doctor;
+        }
+        
+        // Jika tidak ada medical record, return null
+        return null;
+    }
+
+    // ✅ ADDED: Helper method untuk mendapatkan nama dokter
+    public function getDoctorNameAttribute(): ?string
+    {
+        if ($this->doctor) {
+            return $this->doctor->name;
+        }
+        
+        return null;
     }
 
     // Helper methods untuk status

@@ -1,5 +1,5 @@
 {{-- File: resources/views/jadwaldokter.blade.php --}}
-{{-- UPDATE: Hapus tombol "Buat Antrian" --}}
+{{-- SIMPLE VERSION: Same design, simplified logic --}}
 
 @extends('layouts.main')
 
@@ -33,14 +33,39 @@
                         </div>
                     @endif
                     
-                    <!-- Status Badge -->
+                    <!-- ✅ SIMPLE Status Badge -->
                     @php
                         $today = strtolower(now()->format('l')); // monday, tuesday, etc.
-                        $isActiveToday = in_array($today, $doctor['all_days']->toArray());
+                        $currentTime = now()->format('H:i');
+                        $isPracticingToday = in_array($today, $doctor['all_days']->toArray());
+                        
+                        // Simple status logic
+                        if (!$isPracticingToday) {
+                            $status = 'not_today';
+                            $label = 'Tidak Praktik';
+                            $class = 'status-inactive';
+                        } else {
+                            $startTime = $doctor['schedules']->first()->start_time->format('H:i');
+                            $endTime = $doctor['schedules']->first()->end_time->format('H:i');
+                            
+                            if ($currentTime >= $startTime && $currentTime <= $endTime) {
+                                $status = 'practicing';
+                                $label = 'Sedang Praktik';
+                                $class = 'status-active';
+                            } elseif ($currentTime < $startTime) {
+                                $status = 'upcoming';
+                                $label = 'Akan Praktik';
+                                $class = 'status-upcoming';
+                            } else {
+                                $status = 'finished';
+                                $label = 'Praktik Selesai';
+                                $class = 'status-finished';
+                            }
+                        }
                     @endphp
                     
-                    <div class="status-badge {{ $isActiveToday ? 'status-active' : 'status-inactive' }}">
-                        {{ $isActiveToday ? 'Praktik Hari Ini' : 'Tidak Praktik' }}
+                    <div class="status-badge {{ $class }}">
+                        {{ $label }}
                     </div>
                 </div>
 
@@ -85,37 +110,26 @@
                         </div>
                     </div>
 
-                    {{-- ✅ HAPUS BAGIAN ACTION BUTTON INI --}}
-                    {{-- 
-                    <!-- Action Button -->
-                    @if($isActiveToday)
-                        <div class="doctor-actions">
-                            <a href="{{ route('antrian.create') }}?doctor={{ $doctor['doctor_name'] }}" 
-                               class="btn btn-primary btn-full">
-                                <i class="fas fa-plus-circle"></i>
-                                Buat Antrian
-                            </a>
-                        </div>
-                    @else
-                        <div class="doctor-actions">
-                            <span class="btn btn-disabled btn-full">
-                                <i class="fas fa-info-circle"></i>
-                                Tidak Praktik Hari Ini
-                            </span>
-                        </div>
-                    @endif 
-                    --}}
-
-                    {{-- ✅ GANTI DENGAN INFO SAJA (OPSIONAL) --}}
+                    <!-- ✅ SIMPLE Status Info -->
                     <div class="doctor-status-info">
-                        @if($isActiveToday)
+                        @if($status === 'practicing')
                             <div class="status-info-active">
                                 <i class="fas fa-check-circle"></i>
                                 <span>Sedang Praktik Hari Ini</span>
                             </div>
+                        @elseif($status === 'upcoming')
+                            <div class="status-info-upcoming">
+                                <i class="fas fa-clock"></i>
+                                <span>Akan Praktik Hari Ini</span>
+                            </div>
+                        @elseif($status === 'finished')
+                            <div class="status-info-finished">
+                                <i class="fas fa-moon"></i>
+                                <span>Praktik Hari Ini Selesai</span>
+                            </div>
                         @else
                             <div class="status-info-inactive">
-                                <i class="fas fa-clock"></i>
+                                <i class="fas fa-calendar-times"></i>
                                 <span>Tidak Praktik Hari Ini</span>
                             </div>
                         @endif
@@ -146,7 +160,6 @@
                     <li>Jadwal dapat berubah sewaktu-waktu tanpa pemberitahuan sebelumnya</li>
                     <li>Harap datang 15 menit sebelum jam praktik</li>
                     <li>Untuk informasi lebih lanjut, hubungi: <strong>0821-1234-5678</strong></li>
-                    {{-- ✅ TAMBAH INFO CARA BUAT ANTRIAN --}}
                     <li>Untuk membuat antrian, silakan gunakan menu <strong>"Buat Antrian"</strong> di sidebar</li>
                 </ul>
             </div>
@@ -155,10 +168,7 @@
 </main>
 
 <style>
-/* ============================================================================ */
-/* JADWAL DOKTER STYLES - TANPA TOMBOL BUAT ANTRIAN */
-/* ============================================================================ */
-
+/* Same design as before, but simplified status classes */
 .page-header {
     background: white;
     padding: 25px;
@@ -238,6 +248,7 @@
     opacity: 0.8;
 }
 
+/* ✅ SIMPLE Status Badge */
 .status-badge {
     position: absolute;
     top: 15px;
@@ -254,6 +265,16 @@
     background: #2ecc71;
     color: white;
     animation: pulse 2s infinite;
+}
+
+.status-upcoming {
+    background: #f39c12;
+    color: white;
+}
+
+.status-finished {
+    background: #3498db;
+    color: white;
 }
 
 .status-inactive {
@@ -343,7 +364,7 @@
     font-size: 15px;
 }
 
-/* ✅ STATUS INFO TANPA TOMBOL */
+/* ✅ SIMPLE Status Info */
 .doctor-status-info {
     margin-top: 20px;
     text-align: center;
@@ -355,6 +376,32 @@
     padding: 12px 15px;
     border-radius: 10px;
     border: 1px solid #c3e6cb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.status-info-upcoming {
+    background: #fff3cd;
+    color: #856404;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 1px solid #ffeaa7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.status-info-finished {
+    background: #d1ecf1;
+    color: #0c5460;
+    padding: 12px 15px;
+    border-radius: 10px;
+    border: 1px solid #bee5eb;
     display: flex;
     align-items: center;
     justify-content: center;
