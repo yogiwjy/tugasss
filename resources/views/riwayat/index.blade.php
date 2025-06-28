@@ -141,26 +141,36 @@
                                     </span>
                                 </td>
                                 <td>
+                                    {{-- ✅ PERBAIKAN UTAMA: Kolom Dokter --}}
                                     <div class="doctor-info">
                                         @if($antrian->doctor_name)
-                                            <strong>{{ $antrian->doctor_name }}</strong>
-                                            @if(config('app.debug'))
-                                                <small class="text-muted d-block">
-                                                    @if($antrian->doctor_id && $antrian->doctorSchedule)
-                                                        <span class="badge badge-success">Dari Antrian</span><br>
-                                                        {{-- ID: {{ $antrian->doctor_id }} --}}
+                                            <div class="doctor-name-main">
+                                                <strong>{{ $antrian->doctor_name }}</strong>
+                                            </div>
+                                            {{-- Debug info hanya untuk development --}}
+                                            @if(config('app.debug', false))
+                                                <div class="doctor-source">
+                                                    @if($antrian->doctorSchedule)
+                                                        <small class="badge badge-info">✓ Dipilih saat antrian</small>
+                                                    @elseif($antrian->medicalRecord && $antrian->medicalRecord->doctor)
+                                                        <small class="badge badge-success">↳ Dari rekam medis</small>
                                                     @endif
-                                                    @if($antrian->medicalRecord && $antrian->medicalRecord->doctor)
-                                                        <span class="badge badge-info">Dari Rekam Medis</span>
-                                                    @endif
-                                                </small>
+                                                </div>
                                             @endif
                                         @else
-                                            <span class="text-muted">Belum ditentukan</span>
-                                            @if(config('app.debug'))
-                                                <small class="text-danger d-block">
-                                                    Debug: doctor_id={{ $antrian->doctor_id ?? 'null' }}
-                                                </small>
+                                            <span class="text-muted">
+                                                <i class="fas fa-user-md opacity-50"></i>
+                                                Belum ditentukan
+                                            </span>
+                                            {{-- Debug info untuk development --}}
+                                            @if(config('app.debug', false))
+                                                <div class="debug-info">
+                                                    <small class="text-danger">
+                                                        Debug: doctor_id={{ $antrian->doctor_id ?? 'null' }}
+                                                        | Schedule={{ $antrian->doctorSchedule ? 'ada' : 'null' }}
+                                                        | Medical={{ $antrian->medicalRecord ? 'ada' : 'null' }}
+                                                    </small>
+                                                </div>
                                             @endif
                                         @endif
                                     </div>
@@ -215,20 +225,21 @@
                                     <i class="fas fa-calendar"></i>
                                     <span>{{ $antrian->formatted_tanggal }}</span>
                                 </div>
+                                {{-- ✅ PERBAIKAN UTAMA: Info Dokter di Mobile --}}
                                 <div class="info-item">
                                     <i class="fas fa-user-md"></i>
                                     <span>
                                         @if($antrian->doctor_name)
                                             {{ $antrian->doctor_name }}
-                                            @if(config('app.debug'))
-                                                @if($antrian->doctor_id)
-                                                    <small class="text-success">(Antrian)</small>
+                                            @if(config('app.debug', false))
+                                                @if($antrian->doctorSchedule)
+                                                    <small class="badge badge-info">✓</small>
                                                 @elseif($antrian->medicalRecord && $antrian->medicalRecord->doctor)
-                                                    <small class="text-info">(Rekam Medis)</small>
+                                                    <small class="badge badge-success">↳</small>
                                                 @endif
                                             @endif
                                         @else
-                                            Belum ditentukan
+                                            <span class="text-muted">Belum ditentukan</span>
                                         @endif
                                     </span>
                                 </div>
@@ -617,11 +628,56 @@
     border: 1px solid #dc3545;
 }
 
+/* ✅ PERBAIKAN: Styling untuk info dokter yang lebih baik */
 .doctor-info {
-    color: #495057;
-    font-weight: 500;
+    max-width: 180px;
     font-size: 14px;
-    max-width: 150px;
+}
+
+.doctor-name-main {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1.2;
+}
+
+.doctor-source {
+    margin-top: 4px;
+}
+
+.doctor-source .badge {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+.badge-info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.badge-success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.debug-info {
+    margin-top: 6px;
+    font-size: 10px;
+    line-height: 1.2;
+    word-break: break-all;
+}
+
+.text-muted {
+    color: #6c757d !important;
+    font-style: italic;
+}
+
+.opacity-50 {
+    opacity: 0.5;
 }
 
 /* Mobile Cards */
@@ -686,6 +742,7 @@
 .info-item span {
     color: #495057;
     font-size: 14px;
+    flex: 1;
 }
 
 .info-item.medical-info {
@@ -730,6 +787,29 @@
     margin-left: auto;
     margin-right: auto;
     line-height: 1.6;
+}
+
+.btn {
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    color: white;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
 /* Responsive Design */

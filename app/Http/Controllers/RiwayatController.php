@@ -1,6 +1,6 @@
 <?php
 // File: app/Http/Controllers/RiwayatController.php
-// PERBAIKAN SYNTAX ERROR pada RiwayatController
+// PERBAIKAN untuk menampilkan dokter yang dipilih saat antrian
 
 namespace App\Http\Controllers;
 
@@ -15,13 +15,13 @@ class RiwayatController extends Controller
     public function index(Request $request)
     {
         try {
-            // ✅ PERBAIKAN UTAMA: Tambah doctorSchedule ke eager loading
+            // ✅ PERBAIKAN UTAMA: Eager load semua relationship yang diperlukan
             $query = Queue::with([
-                'service', 
-                'user', 
-                'counter', 
-                'doctorSchedule',        // ✅ TAMBAH INI - untuk dokter yang dipilih saat antrian
-                'medicalRecord.doctor'   // ✅ TETAP ADA - untuk dokter dari rekam medis
+                'service',              // Service/Poli
+                'user',                 // Data user/pasien
+                'counter',              // Loket
+                'doctorSchedule',       // ✅ PERBAIKAN: Doctor yang dipilih saat antrian
+                'medicalRecord.doctor'  // Doctor dari rekam medis (jika ada)
             ])->where('user_id', Auth::id());
 
             // ✅ Filter berdasarkan poli/service jika ada
@@ -66,13 +66,13 @@ class RiwayatController extends Controller
     public function export(Request $request)
     {
         try {
-            // ✅ TAMBAH doctorSchedule relationship
+            // ✅ PERBAIKAN: Eager load dengan doctorSchedule
             $query = Queue::with([
                 'service', 
                 'user', 
                 'counter', 
-                'doctorSchedule',
-                'medicalRecord.doctor'
+                'doctorSchedule',       // ✅ PERBAIKAN: Doctor yang dipilih saat antrian
+                'medicalRecord.doctor'  // Doctor dari rekam medis
             ])->where('user_id', Auth::id());
 
             if ($request->filled('poli')) {
@@ -139,13 +139,13 @@ class RiwayatController extends Controller
     public function show($id)
     {
         try {
-            // ✅ TAMBAH doctorSchedule relationship
+            // ✅ PERBAIKAN: Eager load dengan doctorSchedule
             $antrian = Queue::with([
                 'service', 
                 'user', 
                 'counter', 
-                'doctorSchedule',
-                'medicalRecord.doctor'
+                'doctorSchedule',       // ✅ PERBAIKAN: Doctor yang dipilih saat antrian
+                'medicalRecord.doctor'  // Doctor dari rekam medis
             ])->where('user_id', Auth::id())
               ->findOrFail($id);
 

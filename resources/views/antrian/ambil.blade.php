@@ -105,7 +105,7 @@
                 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="service_id" class="form-label">Layanan</label>
+                        <label for="service_id" class="form-label">Layanan <span class="required">*</span></label>
                         <div class="custom-dropdown" data-name="service_id">
                             <div class="dropdown-trigger @error('service_id') is-invalid @enderror" id="service-trigger">
                                 <span class="dropdown-text">-- Pilih Layanan --</span>
@@ -135,7 +135,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="doctor_id" class="form-label">Dokter</label>
+                        <label for="doctor_id" class="form-label">Dokter <span class="required">*</span></label>
                         <div class="custom-dropdown" data-name="doctor_id">
                             <div class="dropdown-trigger @error('doctor_id') is-invalid @enderror" id="doctor-trigger">
                                 <span class="dropdown-text">-- Pilih Dokter --</span>
@@ -165,8 +165,8 @@
                                             </div>
                                         @endforeach
                                     @else
-                                        <div class="dropdown-option" data-value="" data-text="Tidak ada dokter tersedia">
-                                            <span>Tidak ada dokter tersedia</span>
+                                        <div class="dropdown-option disabled" data-value="" data-text="Tidak ada dokter tersedia">
+                                            <span>Tidak ada dokter tersedia untuk saat ini</span>
                                         </div>
                                     @endif
                                 </div>
@@ -179,7 +179,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="tanggal_antrian_display" class="form-label">Tanggal Antrian</label>
+                        <label for="tanggal_antrian_display" class="form-label">Tanggal Antrian <span class="required">*</span></label>
                         <div id="tanggal-antrian-picker" class="tanggal-antrian-picker">
                         </div>
                         <input type="hidden" name="tanggal" id="tanggal" value="{{ old('tanggal') }}" required>
@@ -202,69 +202,10 @@
             </div>
         </form>
     </div>
-    </div>
 </main>
 
 <style>
-/* Existing styles... */
-/* Add custom styles for the new date picker */
-.tanggal-antrian-picker {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px;
-    border: 2px solid #ecf0f1;
-    border-radius: 8px;
-    background: white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.date-option {
-    padding: 10px 15px;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
-    cursor: pointer;
-    background-color: #f8f9fa;
-    color: #34495e;
-    font-size: 14px;
-    text-align: center;
-    transition: all 0.2s ease;
-    flex: 1 1 auto; /* Allow items to grow and shrink */
-    min-width: 80px; /* Minimum width for each date option */
-}
-
-.date-option:hover {
-    background-color: #e9ecef;
-    border-color: #ced4da;
-}
-
-.date-option.selected {
-    background-color: #3498db;
-    color: white;
-    border-color: #3498db;
-    font-weight: 600;
-    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.2);
-}
-
-.date-option.disabled {
-    background-color: #e9ecef;
-    color: #adb5bd;
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-/* Ensure the date picker fills the grid column */
-.form-group:has(.tanggal-antrian-picker) {
-    grid-column: span 3; /* Span full width on larger screens since we have 3 fields now */
-}
-
-@media (max-width: 768px) {
-    .form-group:has(.tanggal-antrian-picker) {
-        grid-column: span 1; /* Back to single column on mobile */
-    }
-}
-
-/* Existing styles below */
+/* Page Styles */
 .page-header {
     background: white;
     padding: 25px;
@@ -285,6 +226,7 @@
     margin: 0;
 }
 
+/* Alert Styles */
 .alert {
     background: white;
     border: none;
@@ -323,6 +265,7 @@
     color: #7f8c8d;
 }
 
+/* Form Styles */
 .form-card {
     background: white;
     border-radius: 15px;
@@ -372,6 +315,17 @@
     font-size: 14px;
 }
 
+.form-label .required {
+    color: #e74c3c;
+    font-weight: bold;
+}
+
+.form-label .optional {
+    color: #7f8c8d;
+    font-weight: normal;
+    font-size: 12px;
+}
+
 .form-input,
 .form-select {
     padding: 12px 15px;
@@ -404,6 +358,24 @@
     margin-top: 5px;
 }
 
+.form-helper {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.form-helper a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.form-helper a:hover {
+    text-decoration: underline;
+}
+
 .form-actions {
     display: flex;
     gap: 15px;
@@ -418,18 +390,68 @@
     font-size: 16px;
 }
 
-/* Custom Dropdown Styles (untuk Pilih Service/Gender) */
+/* Date Picker Styles */
+.tanggal-antrian-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.date-option {
+    padding: 10px 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: #f8f9fa;
+    color: #34495e;
+    font-size: 14px;
+    text-align: center;
+    transition: all 0.2s ease;
+    flex: 1 1 auto;
+    min-width: 80px;
+}
+
+.date-option:hover {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+
+.date-option.selected {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+    font-weight: 600;
+    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.2);
+}
+
+.date-option.disabled {
+    background-color: #e9ecef;
+    color: #adb5bd;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.form-group:has(.tanggal-antrian-picker) {
+    grid-column: span 3;
+}
+
+/* Custom Dropdown Styles */
 .custom-dropdown {
     position: relative;
     width: 100%;
 }
 
-.custom-dropdown .dropdown-trigger { /* Lebih spesifik */
+.custom-dropdown .dropdown-trigger {
     width: 100%;
     padding: 12px 45px 12px 15px;
     border: 2px solid #ecf0f1;
     border-radius: 8px;
-    background: white;
+    background: white !important;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -439,63 +461,62 @@
     min-height: 48px;
 }
 
-.custom-dropdown .dropdown-trigger:hover { /* Lebih spesifik */
+.custom-dropdown .dropdown-trigger:hover {
     border-color: #bdc3c7;
 }
 
-.custom-dropdown .dropdown-trigger.active { /* Lebih spesifik */
+.custom-dropdown .dropdown-trigger.active {
     border-color: #3498db;
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
-.custom-dropdown .dropdown-trigger.is-invalid { /* Lebih spesifik */
+.custom-dropdown .dropdown-trigger.is-invalid {
     border-color: #e74c3c;
 }
 
-.custom-dropdown .dropdown-text { /* Lebih spesifik */
+.custom-dropdown .dropdown-text {
     flex: 1;
-    color: #2c3e50;
+    color: #2c3e50 !important;
     font-size: 14px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    background: transparent !important;
 }
 
-.custom-dropdown .dropdown-text.placeholder { /* Lebih spesifik */
-    color: #95a5a6;
+.custom-dropdown .dropdown-text.placeholder {
+    color: #95a5a6 !important;
 }
 
-.custom-dropdown .dropdown-icon { /* Lebih spesifik */
+.custom-dropdown .dropdown-icon {
     color: #95a5a6;
     transition: transform 0.3s ease;
     font-size: 12px;
 }
 
-.custom-dropdown .dropdown-trigger.active .dropdown-icon { /* Lebih spesifik */
+.custom-dropdown .dropdown-trigger.active .dropdown-icon {
     transform: rotate(180deg);
 }
 
-/* GLOBAL dropdown-menu, yang mana juga dipakai oleh profil dropdown.
-   Pastikan ini tidak memiliki posisi fixed. */
-.dropdown-menu {
+.custom-dropdown .dropdown-menu {
     position: absolute;
-    top: 50px;
+    top: 100%;
+    left: 0;
     right: 0;
     background: white;
     border: 1px solid #ecf0f1;
     border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    min-width: 180px;
-    padding: 10px 0;
+    z-index: 2001;
     display: none;
-    z-index: 2001; /* Higher than navbar */
+    max-height: 300px;
+    overflow: hidden;
 }
 
-.dropdown-menu.show {
+.custom-dropdown .dropdown-menu.show {
     display: block;
 }
 
-/* Lebih spesifik untuk dropdown pencarian */
 .custom-dropdown .dropdown-search {
     position: relative;
     padding: 10px;
@@ -553,11 +574,18 @@
     display: none;
 }
 
+.custom-dropdown .dropdown-option.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    background-color: #f8f9fa;
+}
+
 .custom-dropdown .service-info,
 .custom-dropdown .doctor-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
+    width: 100%;
 }
 
 .custom-dropdown .service-name,
@@ -585,6 +613,40 @@
     color: rgba(255, 255, 255, 0.8);
 }
 
+/* Loading state */
+.btn-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.btn-loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Backdrop for mobile */
+.dropdown-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.dropdown-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
     .form-grid {
@@ -600,31 +662,31 @@
         padding: 20px;
     }
 
-    /* Ini adalah perbaikan utamanya! Target hanya dropdown di dalam custom-dropdown */
-    .custom-dropdown .dropdown-menu { /* Target semua dropdown di dalam .custom-dropdown */
-        max-height: 250px; /* Batasi tinggi menu dropdown */
-        /* Hapus properti positioning global (top, left, transform, fixed)
-           agar dropdown ini tidak lagi muncul di tengah layar */
-        position: absolute; /* Pastikan kembali ke absolute */
-        top: 100%; /* Atau sesuaikan agar muncul di bawah trigger */
+    .form-group:has(.tanggal-antrian-picker) {
+        grid-column: span 1;
+    }
+
+    .custom-dropdown .dropdown-menu {
+        max-height: 250px;
+        position: absolute;
+        top: 100%;
         left: 0;
         right: auto;
         transform: none;
-        width: 100%; /* Sesuaikan lebar dengan parent custom-dropdown */
-        max-width: none; /* Biarkan dia mengisi 100% dari parent */
+        width: 100%;
+        max-width: none;
     }
 
-    /* Jika ada .dropdown-menu.show di mobile, pastikan posisinya juga kembali normal */
     .custom-dropdown .dropdown-menu.show {
-        position: absolute; /* Kunci perbaikan! Kembali ke absolute */
-        top: 100%; /* Agar muncul di bawah trigger custom-dropdown */
+        position: absolute;
+        top: 100%;
         left: 0;
         right: auto;
-        transform: none; /* Hapus transform yang membuat di tengah */
-        width: 100%; /* Agar mengisi lebar custom-dropdown */
+        transform: none;
+        width: 100%;
         max-width: none;
-        border-radius: 8px; /* Kembalikan border-radius normal */
-        border: 1px solid #ecf0f1; /* Kembalikan border normal */
+        border-radius: 8px;
+        border: 1px solid #ecf0f1;
     }
 
     .custom-dropdown .dropdown-options {
@@ -654,7 +716,6 @@
     }
 }
 
-/* Touch-friendly adjustments */
 @media (max-width: 480px) {
     .custom-dropdown .dropdown-trigger {
         min-height: 56px;
@@ -668,42 +729,8 @@
 
     .custom-dropdown .search-input {
         padding: 12px 40px 12px 15px;
-        font-size: 16px; /* Prevents zoom on iOS */
+        font-size: 16px;
     }
-}
-
-/* Loading state */
-.btn-loading {
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.btn-loading i {
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Backdrop for mobile (untuk custom dropdowns) */
-.dropdown-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    z-index: 999;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-}
-
-.dropdown-backdrop.show {
-    opacity: 1;
-    visibility: visible;
 }
 </style>
 
@@ -715,18 +742,34 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Custom Dropdowns
     initCustomDropdowns();
 
-    // Set minimum date for birth_date (18 years ago)
-    const birthDateInput = document.getElementById('birth_date');
-    if (birthDateInput) {
-        const eighteenYearsAgo = new Date();
-        eighteenYearsAgo.setFullYear(eighteenYearsAgo.getFullYear() - 18);
-        const maxDate = eighteenYearsAgo.toISOString().split('T')[0];
-        birthDateInput.setAttribute('max', maxDate);
-    }
-
-    // Prevent double submission
+    // Form validation and submission
     if (form) {
-        form.addEventListener('submit', function() {
+        form.addEventListener('submit', function(e) {
+            // Validasi service_id wajib diisi
+            const serviceIdInput = document.getElementById('service_id');
+            if (!serviceIdInput.value) {
+                e.preventDefault();
+                alert('Harap pilih layanan terlebih dahulu!');
+                return;
+            }
+
+            // Validasi tanggal wajib diisi
+            const tanggalInput = document.getElementById('tanggal');
+            if (!tanggalInput.value) {
+                e.preventDefault();
+                alert('Harap pilih tanggal antrian!');
+                return;
+            }
+
+            // Validasi doctor_id wajib diisi
+            const doctorIdInput = document.getElementById('doctor_id');
+            if (!doctorIdInput.value) {
+                e.preventDefault();
+                alert('Harap pilih dokter terlebih dahulu!');
+                return;
+            }
+
+            // Disable submit button untuk prevent double submission
             submitBtn.disabled = true;
             submitBtn.classList.add('btn-loading');
             submitBtn.innerHTML = '<i class="fas fa-spinner"></i> Memproses...';
@@ -763,10 +806,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentValue = hiddenInput.value;
             if (currentValue) {
                 const selectedOption = dropdown.querySelector(`[data-value="${currentValue}"]`);
-                if (selectedOption) {
+                if (selectedOption && !selectedOption.classList.contains('disabled')) {
                     selectOption(selectedOption, dropdown);
                 }
             }
+
+            // Set initial state - jangan ubah tampilan visual
 
             // Trigger click
             trigger.addEventListener('click', function(e) {
@@ -787,12 +832,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Option click
             options.forEach(option => {
-                option.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    selectOption(this, dropdown);
-                    closeDropdown(dropdown);
-                });
+                if (!option.classList.contains('disabled')) {
+                    option.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        selectOption(this, dropdown);
+                        closeDropdown(dropdown);
+                    });
+                }
             });
 
             // Search functionality
@@ -800,11 +847,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchInput.addEventListener('input', function() {
                     const query = this.value.toLowerCase();
                     options.forEach(option => {
-                        const text = option.textContent.toLowerCase();
-                        if (text.includes(query)) {
-                            option.classList.remove('hidden');
-                        } else {
-                            option.classList.add('hidden');
+                        if (!option.classList.contains('disabled')) {
+                            const text = option.textContent.toLowerCase();
+                            if (text.includes(query)) {
+                                option.classList.remove('hidden');
+                            } else {
+                                option.classList.add('hidden');
+                            }
                         }
                     });
                 });
@@ -901,28 +950,37 @@ document.addEventListener('DOMContentLoaded', function() {
             // Remove invalid state
             const trigger = dropdown.querySelector('.dropdown-trigger');
             trigger.classList.remove('is-invalid');
+
+            // Debug log untuk memastikan doctor_id tersimpan
+            if (dropdown.getAttribute('data-name') === 'doctor_id') {
+                console.log('Doctor selected:', {
+                    value: value,
+                    text: text,
+                    hiddenInputValue: hiddenInput.value
+                });
+            }
         }
     }
 
     // --- Custom Date Picker Logic ---
     const tanggalAntrianPicker = document.getElementById('tanggal-antrian-picker');
-    const hiddenTanggalInput = document.getElementById('tanggal'); // The actual input for form submission
+    const hiddenTanggalInput = document.getElementById('tanggal');
     const today = new Date();
 
     function formatDateForInput(date) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`; // YYYY-MM-DD format
+        return `${year}-${month}-${day}`;
     }
 
     function formatDisplayDate(date) {
         const options = { weekday: 'short', month: 'short', day: 'numeric' };
-        return date.toLocaleDateString('id-ID', options); // e.g., "Kam, 20 Jun"
+        return date.toLocaleDateString('id-ID', options);
     }
 
     function renderDateOptions() {
-        tanggalAntrianPicker.innerHTML = ''; // Clear previous options
+        tanggalAntrianPicker.innerHTML = '';
         for (let i = 0; i < 7; i++) {
             const date = new Date(today);
             date.setDate(today.getDate() + i);
@@ -935,22 +993,18 @@ document.addEventListener('DOMContentLoaded', function() {
             dateOption.setAttribute('data-date', dateString);
             dateOption.textContent = displayString;
 
-            // Set selected if it matches the old value or is today initially
             if (hiddenTanggalInput.value === dateString) {
                 dateOption.classList.add('selected');
-            } else if (!hiddenTanggalInput.value && i === 0) { // Select today by default if no old value
+            } else if (!hiddenTanggalInput.value && i === 0) {
                 dateOption.classList.add('selected');
                 hiddenTanggalInput.value = dateString;
             }
 
             dateOption.addEventListener('click', function() {
-                // Remove selected class from all options
                 tanggalAntrianPicker.querySelectorAll('.date-option').forEach(option => {
                     option.classList.remove('selected');
                 });
-                // Add selected class to the clicked option
                 this.classList.add('selected');
-                // Update the hidden input value
                 hiddenTanggalInput.value = this.getAttribute('data-date');
             });
             tanggalAntrianPicker.appendChild(dateOption);

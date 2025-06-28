@@ -1,6 +1,6 @@
 <?php
 // File: app/Models/Queue.php
-// PERBAIKAN LENGKAP untuk Queue Model
+// PERBAIKAN LENGKAP untuk Queue Model dengan relationship dokter yang benar
 
 namespace App\Models;
 
@@ -15,6 +15,7 @@ class Queue extends Model
         'counter_id',
         'service_id',
         'user_id',
+        'doctor_id',  // ✅ TAMBAH doctor_id ke fillable
         'number',
         'status',
         'called_at',
@@ -46,12 +47,68 @@ class Queue extends Model
         return $this->belongsTo(User::class);
     }
 
+    // ✅ PERBAIKAN UTAMA: Tambah relationship ke DoctorSchedule
+    public function doctorSchedule(): BelongsTo
+    {
+        return $this->belongsTo(DoctorSchedule::class, 'doctor_id');
+    }
+
     public function medicalRecord(): HasOne
     {
         return $this->hasOne(MedicalRecord::class);
     }
 
     // ✅ ACCESSOR METHODS YANG BENAR
+
+    /**
+     * ✅ PERBAIKAN: Get doctor name dari doctor_id (DoctorSchedule) atau Medical Record
+     */
+    public function getDoctorNameAttribute(): ?string
+    {
+        // Prioritas 1: Ambil dari doctor_id yang dipilih saat antrian
+        if ($this->doctor_id && $this->doctorSchedule) {
+            return $this->doctorSchedule->doctor_name;
+        }
+        
+        // Prioritas 2: Ambil dari medical record jika ada
+        if ($this->medicalRecord && $this->medicalRecord->doctor) {
+            return $this->medicalRecord->doctor->name;
+        }
+        
+        return null;
+    }
+
+    /**
+     * ✅ PERBAIKAN: Get poli name dari service relationship
+     */
+    public function getPoliAttribute(): ?string
+    {
+        return $this->service->name ?? null;
+    }
+
+    /**
+     * ✅ PERBAIKAN: Get patient name dari user relationship
+     */
+    public function getNameAttribute(): ?string
+    {
+        return $this->user->name ?? null;
+    }
+
+    /**
+     * ✅ PERBAIKAN: Get patient phone dari user relationship
+     */
+    public function getPhoneAttribute(): ?string
+    {
+        return $this->user->phone ?? null;
+    }
+
+    /**
+     * ✅ PERBAIKAN: Get patient gender dari user relationship
+     */
+    public function getGenderAttribute(): ?string
+    {
+        return $this->user->gender ?? null;
+    }
 
     /**
      * Get status badge color untuk UI

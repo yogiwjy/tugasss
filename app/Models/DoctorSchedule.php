@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany; // ✅ TAMBAH INI
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
@@ -15,7 +16,7 @@ class DoctorSchedule extends Model
         'start_time',
         'end_time',
         'is_active',
-        'foto' // ✅ TAMBAH FOTO
+        'foto'
     ];
 
     protected $casts = [
@@ -39,6 +40,14 @@ class DoctorSchedule extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ✅ PERBAIKAN: Relationship ke Queue (antrian yang memilih dokter ini)
+     */
+    public function queues(): HasMany
+    {
+        return $this->hasMany(Queue::class, 'doctor_id');
     }
 
     /**

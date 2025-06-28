@@ -47,10 +47,15 @@ Route::middleware(['auth:web', 'role.user'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
 
-    // Riwayat Pasien
-    Route::get('/riwayatkunjungan', [RiwayatController::class, 'index'])->name('riwayat.index');
+    // ✅ PERBAIKAN: Riwayat Pasien - Routes yang lengkap
+    Route::prefix('riwayatkunjungan')->name('riwayat.')->controller(RiwayatController::class)->group(function () {
+        Route::get('/', 'index')->name('index');                           // GET /riwayatkunjungan
+        Route::get('/export', 'export')->name('export');                   // GET /riwayatkunjungan/export
+        Route::get('/statistics', 'statistics')->name('statistics');       // GET /riwayatkunjungan/statistics
+        Route::get('/{queue}', 'show')->name('show');                      // GET /riwayatkunjungan/{id}
+    });
 
-    // ✅ PERBAIKAN: Antrian Routes dengan struktur yang konsisten
+    // ✅ EXISTING: Antrian Routes dengan struktur yang konsisten
     Route::prefix('antrian')->name('antrian.')->controller(AntrianController::class)->group(function () {
         Route::get('/', 'index')->name('index');                           // GET /antrian
         Route::get('/create', 'create')->name('create');                   // GET /antrian/create

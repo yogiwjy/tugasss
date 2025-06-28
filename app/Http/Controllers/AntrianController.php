@@ -64,14 +64,14 @@ class AntrianController extends Controller
     }
 
     /**
-     * Simpan antrian baru
+     * ✅ PERBAIKAN UTAMA: Simpan antrian baru dengan doctor_id
      */
     public function store(Request $request)
     {
-        // ✅ PERBAIKAN: Validasi yang lebih sederhana
+        // ✅ PERBAIKAN: Validasi termasuk doctor_id
         $request->validate([
             'service_id' => 'required|exists:services,id',
-            'doctor_id' => 'nullable|exists:doctor_schedules,id',
+            'doctor_id' => 'nullable|exists:doctor_schedules,id',  // ✅ PERBAIKAN: Validasi doctor_id
         ], [
             'service_id.required' => 'Layanan harus dipilih',
             'doctor_id.exists' => 'Dokter yang dipilih tidak valid',
@@ -98,10 +98,11 @@ class AntrianController extends Controller
             // ✅ SUDAH BENAR
             $queueNumber = $this->generateQueueNumber($request->service_id);
 
-            // ✅ PERBAIKAN: Data antrian yang sederhana
+            // ✅ PERBAIKAN: Data antrian dengan doctor_id
             $queueData = [
                 'service_id' => $request->service_id,
                 'user_id' => $user->id,
+                'doctor_id' => $request->doctor_id,  // ✅ PERBAIKAN: Simpan doctor_id
                 'number' => $queueNumber,
                 'status' => 'waiting',
             ];
@@ -110,9 +111,16 @@ class AntrianController extends Controller
 
             DB::commit();
 
-            return redirect()->route('antrian.index')->with('success', 
-                'Antrian berhasil dibuat! Nomor antrian Anda: ' . $queueNumber
-            );
+            // ✅ PERBAIKAN: Message dengan info dokter jika dipilih
+            $message = 'Antrian berhasil dibuat! Nomor antrian Anda: ' . $queueNumber;
+            if ($request->doctor_id) {
+                $doctorSchedule = DoctorSchedule::find($request->doctor_id);
+                if ($doctorSchedule) {
+                    $message .= ' dengan ' . $doctorSchedule->doctor_name;
+                }
+            }
+
+            return redirect()->route('antrian.index')->with('success', $message);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -168,7 +176,7 @@ class AntrianController extends Controller
     }
 
     /**
-     * Update antrian - PERBAIKAN
+     * ✅ PERBAIKAN: Update antrian dengan doctor_id
      */
     public function update(Request $request, $id)
     {
@@ -183,15 +191,19 @@ class AntrianController extends Controller
                            ->withErrors(['error' => 'Antrian tidak dapat diubah karena sudah dipanggil atau selesai.']);
         }
 
+        // ✅ PERBAIKAN: Validasi termasuk doctor_id
         $request->validate([
             'service_id' => 'required|exists:services,id',
-            'doctor_id' => 'nullable|exists:doctor_schedules,id',
+            'doctor_id' => 'nullable|exists:doctor_schedules,id',  // ✅ PERBAIKAN: Validasi doctor_id
         ]);
 
         try {
             DB::beginTransaction();
 
-            $updateData = ['service_id' => $request->service_id];
+            $updateData = [
+                'service_id' => $request->service_id,
+                'doctor_id' => $request->doctor_id,  // ✅ PERBAIKAN: Update doctor_id juga
+            ];
             
             // Generate nomor antrian baru jika service berubah
             if ($queue->service_id != $request->service_id) {
